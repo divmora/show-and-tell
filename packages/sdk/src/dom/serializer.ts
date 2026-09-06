@@ -164,6 +164,10 @@ export function isInputMasked(el: HTMLElement, ctx: SerializationContext): boole
   if (explicit !== null) {
     return explicit;
   }
+  // Standard select dropdowns contain predetermined choices; mask only if explicitly requested
+  if (el instanceof HTMLSelectElement || (el.tagName && el.tagName.toLowerCase() === 'select')) {
+    return false;
+  }
   return ctx.config.maskAllInputs ?? true;
 }
 
@@ -234,10 +238,19 @@ export function serializeNode(node: Node, ctx: SerializationContext): Serialized
       attributes['href'] = (el as HTMLLinkElement).href;
     } else if (tagName === 'img' && (el as HTMLImageElement).src) {
       attributes['src'] = (el as HTMLImageElement).src;
+    } else if (tagName === 'option') {
+      const opt = el as HTMLOptionElement;
+      if (opt.selected) {
+        attributes['selected'] = '';
+      }
+      if (opt.value !== undefined) {
+        attributes['value'] = opt.value;
+      }
     }
 
     const isInput = tagName === 'input' || tagName === 'textarea' || tagName === 'select';
     let value: string | boolean | undefined;
+    let selectedIndex: number | undefined;
 
     if (isInput) {
       const inputEl = el as HTMLInputElement;
@@ -245,6 +258,10 @@ export function serializeNode(node: Node, ctx: SerializationContext): Serialized
 
       if (inputEl.type === 'checkbox' || inputEl.type === 'radio') {
         value = inputEl.checked;
+      } else if (tagName === 'select') {
+        const sel = el as HTMLSelectElement;
+        value = isMasked ? '' : sel.value;
+        selectedIndex = isMasked ? -1 : sel.selectedIndex;
       } else {
         const rawVal = inputEl.value || '';
         value = isMasked ? '••••••••' : rawVal;
@@ -287,7 +304,8 @@ export function serializeNode(node: Node, ctx: SerializationContext): Serialized
       attributes,
       children,
       isInput,
-      value
+      value,
+      selectedIndex
     };
   }
 

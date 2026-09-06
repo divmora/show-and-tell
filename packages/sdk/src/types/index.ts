@@ -54,6 +54,7 @@ export interface SerializedNode {
   children?: SerializedNode[];
   isInput?: boolean;
   value?: string | boolean;
+  selectedIndex?: number;
 }
 
 export type DomRecordingEvent = 
@@ -62,7 +63,9 @@ export type DomRecordingEvent =
   | { type: 'mouse_move'; timestamp: number; x: number; y: number }
   | { type: 'mouse_click'; timestamp: number; x: number; y: number; clickType: 'click' | 'mousedown' | 'mouseup' }
   | { type: 'scroll'; timestamp: number; x: number; y: number; targetId?: number }
-  | { type: 'input'; timestamp: number; targetId: number; value: string | boolean; checked?: boolean }
+  | { type: 'input'; timestamp: number; targetId: number; value: string | boolean; checked?: boolean; selectedIndex?: number }
+  | { type: 'selection'; timestamp: number; ranges?: { startNodeId: number; startOffset: number; endNodeId: number; endOffset: number }[] }
+  | { type: 'camera_position'; timestamp: number; x: number; y: number; width: number; height: number; shape: 'circle' | 'rect'; isMuted?: boolean }
   | { type: 'resize'; timestamp: number; width: number; height: number };
 
 export interface AudioConfig {
@@ -72,11 +75,72 @@ export interface AudioConfig {
   system?: boolean;
 }
 
+export interface DiagnosticsConfig {
+  /** Master switch to enable/disable diagnostics collection (default: true) */
+  enabled?: boolean;
+  /** Capture console.error, console.warn, console.info (default: true) */
+  console?: boolean;
+  /** Track failed or all network requests via fetch and XMLHttpRequest (default: true) */
+  network?: boolean;
+  /** Capture uncaught window exceptions and unhandled promise rejections (default: true) */
+  uncaughtErrors?: boolean;
+  /** Maximum number of diagnostic entries to retain (default: 200) */
+  maxEntries?: number;
+}
+
+export type DiagnosticLevel = 'error' | 'warn' | 'info';
+
+export interface DiagnosticEntry {
+  id: string;
+  category: 'console' | 'network' | 'error';
+  level: DiagnosticLevel;
+  timestamp: number; // ms elapsed from recording start
+  timestampMs?: number; // alias for timestamp
+  message: string;
+  source?: string;
+  method?: string;
+  url?: string;
+  status?: number;
+  durationMs?: number;
+  details?: {
+    method?: string;
+    url?: string;
+    status?: number;
+    durationMs?: number;
+    stack?: string;
+    filename?: string;
+    lineno?: number;
+    colno?: number;
+    source?: string;
+  };
+}
+
+export interface CameraConfig {
+  /** Shape of the floating camera bubble: 'circle' | 'rect' (default: 'circle') */
+  shape?: 'circle' | 'rect';
+  /** Diameter or size in pixels (default: 160) */
+  size?: number;
+  /** Initial corner placement (default: 'bottom-left') */
+  position?: 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right';
+  /** Horizontally mirror webcam feed (default: true) */
+  mirrored?: boolean;
+  /** Composite camera bubble directly into recorded video stream via canvas (default: false, since floating DOM bubble is already captured directly by getDisplayMedia) */
+  composite?: boolean;
+  /** Always-on-top Document Picture-in-Picture floating window across all windows, applications, and tabs (default: true when supported and camera is enabled) */
+  alwaysOnTop?: boolean;
+}
+
 export interface ShowAndTellConfig {
   /** Recording mode: 'pixel' (screen/display capture, default) or 'dom' (in-app session replay) */
   mode?: RecordingMode;
   /** DOM recording configuration (active when mode is 'dom') */
   dom?: DomConfig;
+  /** Developer diagnostics & breadcrumb tracking (default: true) */
+  diagnostics?: boolean | DiagnosticsConfig;
+  /** Picture-in-picture webcam facecam overlay (pixel mode) */
+  camera?: boolean | CameraConfig;
+  /** Always-on-top Document Picture-in-Picture floating window across all windows, applications, and tabs */
+  alwaysOnTop?: boolean;
   /** Maximum recording duration in seconds (e.g. 120) or string format (e.g. '2m', '30s', '1h'). Recording will automatically discontinue after this time. */
   maxDuration?: number | string;
   /** Threshold in seconds before maxDuration to trigger warning indicators (default: 10s). */
@@ -151,6 +215,12 @@ export interface RecordingResult {
   discontinueReason: DiscontinueReason;
   /** Recorded DOM events if mode was 'dom' */
   domEvents?: DomRecordingEvent[];
+  /** Captured developer diagnostics events (console errors, failed network calls) */
+  diagnostics?: DiagnosticEntry[];
+  /** Synchronized camera video blob recorded during session (DOM or Pixel mode) */
+  cameraBlob?: Blob;
+  /** Blob object URL for camera video playback */
+  cameraUrl?: string;
   /** Helper to trigger browser file download */
   download: (customFilename?: string) => void;
   /** Helper to download DOM replay as an offline self-contained HTML file (DOM mode) */

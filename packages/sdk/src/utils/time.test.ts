@@ -38,6 +38,12 @@ describe('Time Utilities', () => {
       expect(formatDuration(3600)).toBe('01:00:00');
       expect(formatDuration(3665)).toBe('01:01:05');
     });
+
+    it('handles Infinity or NaN gracefully without producing Infinity:NaN:NaN', () => {
+      expect(formatDuration(Infinity)).toBe('00:00');
+      expect(formatDuration(-Infinity)).toBe('00:00');
+      expect(formatDuration(NaN)).toBe('00:00');
+    });
   });
 
   describe('formatBytes', () => {

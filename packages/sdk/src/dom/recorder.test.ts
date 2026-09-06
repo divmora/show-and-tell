@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DomRecorder } from './recorder';
+import { DomReplayer } from './replayer';
 import { generateStandalonePlayerHtml } from './standalone-player';
 
 describe('DomRecorder', () => {
@@ -95,4 +96,126 @@ describe('DomRecorder', () => {
     expect(html).toContain('dom_snapshot');
     expect(html).toContain('replayFrame');
   });
+
+  it('records input events on select elements with value and selectedIndex', () => {
+    document.body.innerHTML = `
+      <select id="topicSelect">
+        <option value="opt1">Option 1</option>
+        <option value="opt2">Option 2</option>
+      </select>
+    `;
+
+    recorder = new DomRecorder();
+    recorder.start();
+
+    const selectEl = document.getElementById('topicSelect') as HTMLSelectElement;
+    selectEl.value = 'opt2';
+    selectEl.selectedIndex = 1;
+    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+
+    const events = recorder.getEvents();
+    const inputEvents = events.filter(e => e.type === 'input');
+    expect(inputEvents.length).toBeGreaterThan(0);
+
+    const selectEvent = inputEvents[inputEvents.length - 1];
+    if (selectEvent.type === 'input') {
+      expect(selectEvent.value).toBe('opt2');
+      expect(selectEvent.selectedIndex).toBe(1);
+    }
+  });
+
+  it('records camera_position events during recording', () => {
+    recorder = new DomRecorder();
+    recorder.start();
+
+    recorder.recordCameraPosition({
+      x: 30,
+      y: 100,
+      width: 260,
+      height: 146,
+      shape: 'rect',
+      isMuted: false
+    });
+
+    const events = recorder.getEvents();
+    const camEvents = events.filter(e => e.type === 'camera_position');
+    expect(camEvents.length).toBe(1);
+
+    const camEvent = camEvents[0];
+    if (camEvent.type === 'camera_position') {
+      expect(camEvent.x).toBe(30);
+      expect(camEvent.y).toBe(100);
+      expect(camEvent.width).toBe(260);
+      expect(camEvent.height).toBe(146);
+      expect(camEvent.shape).toBe('rect');
+      expect(camEvent.isMuted).toBe(false);
+    }
+  });
+
+  it('embeds camera data URI in standalone player HTML export', () => {
+    const html = generateStandalonePlayerHtml({
+      events: [
+        {
+          type: 'dom_snapshot',
+          timestamp: 0,
+          rootNode: { id: 'root', tagName: 'body', nodeType: 1 },
+          viewport: { width: 1280, height: 800, scrollX: 0, scrollY: 0 }
+        }
+      ],
+      durationSeconds: 5,
+      sessionId: 'test-session-cam',
+      cameraDataUri: 'data:video/webm;base64,GkXfo59ChoEB'
+    });
+
+    expect(html).toContain('sat-replay-camera-wrapper');
+    expect(html).toContain('data:video/webm;base64,GkXfo59ChoEB');
+    expect(html).toContain('sat-replay-camera-video');
+  });
+
+  it('DomReplayer mounts and manages camera wrapper when cameraUrl is provided', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const replayer = new DomReplayer({
+      container,
+      events: [
+        {
+          type: 'dom_snapshot',
+          timestamp: 0,
+          rootNode: { id: 'root', tagName: 'body', type: 'element', children: [] },
+          viewport: { width: 1280, height: 800, scrollX: 0, scrollY: 0 }
+        },
+        {
+          type: 'camera_position',
+          timestamp: 500,
+          x: 50,
+          y: 60,
+          width: 240,
+          height: 135,
+          shape: 'rect',
+          isMuted: false
+        }
+      ],
+      cameraUrl: 'blob:http://localhost/dummy-cam-stream'
+    });
+
+    const camWrapper = container.querySelector('.sat-replay-camera-wrapper') as HTMLElement;
+    expect(camWrapper).not.toBeNull();
+
+    const camVideo = container.querySelector('video') as HTMLVideoElement;
+    expect(camVideo).not.toBeNull();
+    expect(camVideo.src).toBe('blob:http://localhost/dummy-cam-stream');
+
+    // Seek to 600ms to trigger the camera_position event
+    replayer.seek(600);
+    expect(camWrapper.style.left).toBe('50px');
+    expect(camWrapper.style.top).toBe('60px');
+    expect(camWrapper.style.width).toBe('240px');
+    expect(camWrapper.style.height).toBe('135px');
+    expect(camWrapper.style.borderRadius).toBe('12px');
+
+    replayer.destroy();
+    expect(container.innerHTML).toBe('');
+  });
 });
+

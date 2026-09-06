@@ -180,6 +180,18 @@ export const WIDGET_STYLES = `
   color: #f87171;
 }
 
+.sat-btn.sat-btn-pip {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+
+.sat-btn.sat-btn-pip:hover {
+  background: #2563eb;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
 .sat-icon {
   width: 16px;
   height: 16px;
@@ -401,7 +413,8 @@ export const MODAL_STYLES = `
   flex-direction: column;
 }
 
-.sat-dom-player-wrapper:fullscreen .sat-dom-player-container {
+.sat-dom-player-wrapper:fullscreen .sat-dom-player-container,
+.sat-dom-player-wrapper:fullscreen .sat-video-container {
   flex: 1;
   height: calc(100vh - 46px);
   aspect-ratio: auto;
@@ -433,11 +446,336 @@ export const MODAL_STYLES = `
   background: #1d4ed8;
 }
 
-.sat-dom-scrubber {
+.sat-scrubber-track-wrap {
+  position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.sat-dom-scrubber {
+  width: 100%;
   accent-color: #3b82f6;
   cursor: pointer;
   height: 5px;
+  position: relative;
+  z-index: 1;
+}
+
+.sat-timeline-markers {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  height: 14px;
+  z-index: 2;
+}
+
+.sat-timeline-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sat-timeline-marker:hover {
+  transform: translate(-50%, -50%) scale(1.8);
+  z-index: 10;
+}
+
+.sat-marker-error {
+  background-color: #ef4444;
+  box-shadow: 0 0 0 1.5px rgba(17, 24, 39, 0.9), 0 0 5px #ef4444;
+}
+
+.sat-marker-warn {
+  background-color: #f59e0b;
+  box-shadow: 0 0 0 1.5px rgba(17, 24, 39, 0.9), 0 0 5px #f59e0b;
+}
+
+.sat-marker-info {
+  background-color: #38bdf8;
+  box-shadow: 0 0 0 1.5px rgba(17, 24, 39, 0.9), 0 0 5px #38bdf8;
+}
+
+.sat-marker-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #09090b;
+  color: #f4f4f5;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sat-timeline-marker:hover .sat-marker-tooltip {
+  opacity: 1;
+}
+
+.sat-video-timeline-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: #111827;
+  border-radius: 8px;
+  margin-top: -6px;
+}
+
+.sat-video-timeline-track {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.sat-video-timeline-progress {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: #3b82f6;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
+.sat-video-timeline-time {
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #94a3b8;
+  min-width: 75px;
+  text-align: center;
+}
+
+.sat-diagnostics-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  outline: none;
+}
+
+.sat-diagnostics-toggle-btn:hover {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+.sat-diagnostics-toggle-btn.has-no-errors {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.sat-diagnostics-toggle-btn.is-active {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.sat-diagnostics-drawer {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  transition: all 0.2s ease;
+}
+
+.sat-diagnostics-drawer.sat-collapsed {
+  display: none;
+}
+
+.sat-diag-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #1e293b;
+  border-bottom: 1px solid #334155;
+  font-size: 12px;
+  color: #f1f5f9;
+  gap: 8px;
+}
+
+.sat-diag-header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.sat-diag-filters {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sat-diag-filter-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.sat-diag-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.sat-diag-filter-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
+  border-color: #3b82f6;
+}
+
+.sat-diag-search {
+  background: #09090b;
+  border: 1px solid #334155;
+  color: #ffffff;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  outline: none;
+  width: 120px;
+}
+
+.sat-diag-search:focus {
+  border-color: #3b82f6;
+}
+
+.sat-diag-list {
+  overflow-y: auto;
+  padding: 4px 0;
+  max-height: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sat-diag-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-left: 3px solid transparent;
+}
+
+.sat-diag-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sat-diag-item.sat-diag-active {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.sat-diag-item-error {
+  border-left-color: #ef4444;
+}
+
+.sat-diag-item-warn {
+  border-left-color: #f59e0b;
+}
+
+.sat-diag-item-info {
+  border-left-color: #38bdf8;
+}
+
+.sat-diag-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.sat-badge-error {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.sat-badge-warn {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.sat-badge-info {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.sat-diag-time-btn {
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border: none;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.sat-diag-time-btn:hover {
+  color: #ffffff;
+  background: #2563eb;
+}
+
+.sat-diag-content {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sat-diag-empty {
+  padding: 16px;
+  text-align: center;
+  color: #64748b;
+  font-size: 11px;
 }
 
 .sat-dom-time {

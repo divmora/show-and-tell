@@ -13,11 +13,14 @@ import { generateStandalonePlayerHtml } from './dom/standalone-player';
 
 export * from './types';
 export * from './dom';
+export * from './diagnostics';
+export * from './camera';
 export { AudioMixer } from './core/audio-mixer';
 export { DurationTracker } from './core/duration-tracker';
 export { storage, StorageManager } from './storage/indexeddb';
 export { formatDuration, formatBytes, parseDurationToMs } from './utils/time';
 export { getPreferredMimeType, getExtensionForMimeType } from './utils/codecs';
+export { PipController } from './ui/pip-controller';
 
 /**
  * Main ShowAndTell SDK object.

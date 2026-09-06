@@ -168,6 +168,35 @@
               Record Display / System Audio (getDisplayMedia)
             </label>
             <label class="checkbox-label">
+              <input type="checkbox" id="cameraOption" />
+              <span id="cameraLabelText">Enable PiP Webcam Facecam (Floating Avatar / Google Meet Style)</span>
+            </label>
+            <div id="cameraConfigGroup" style="display: none; margin-left: 24px; gap: 8px; align-items: center; margin-bottom: 6px;">
+              <select id="cameraShape" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);">
+                <option value="circle" selected>🔵 Circle</option>
+                <option value="rect">⬛ 16:9 Landscape (Google Meet PiP)</option>
+              </select>
+              <select id="cameraSize" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);">
+                <option value="120">Small</option>
+                <option value="160" selected>Medium</option>
+                <option value="220">Large</option>
+              </select>
+              <select id="cameraPosition" style="padding: 4px 8px; font-size: 12px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);">
+                <option value="bottom-left" selected>Bottom-Left</option>
+                <option value="bottom-right">Bottom-Right</option>
+                <option value="top-left">Top-Left</option>
+                <option value="top-right">Top-Right</option>
+              </select>
+            </div>
+            <label class="checkbox-label" id="alwaysOnTopLabel">
+              <input type="checkbox" id="alwaysOnTopOption" checked />
+              <span>Float over all apps (Always-on-Top PiP for webcam & controls across windows & tabs)</span>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="diagnosticsOption" checked />
+              Developer Diagnostics & Breadcrumbs (Console, Errors & Network)
+            </label>
+            <label class="checkbox-label">
               <input type="checkbox" id="floatingUi" checked />
               Show Floating On-Screen Recording Toolbar
             </label>
@@ -308,44 +337,48 @@
           PAN Text (.pan-text-display): ABCDE1234F
         </span>
       </div>
+
+      <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.1);">
+        <label style="font-size: 12px; color: #f87171; display: block; margin-bottom: 8px; font-weight: 600;">
+          🐞 Simulate Errors & Breadcrumbs (Click while recording to see timeline markers & diagnostics drawer in replay!)
+        </label>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+          <button type="button" id="btnTriggerConsoleError" class="btn-outline" style="border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+            💥 Trigger Console Error
+          </button>
+          <button type="button" id="btnTriggerConsoleWarn" class="btn-outline" style="border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
+            ⚠️ Trigger Console Warn
+          </button>
+          <button type="button" id="btnTriggerNetworkError" class="btn-outline" style="border-color: rgba(56, 189, 248, 0.4); color: #38bdf8;">
+            🌐 Trigger 500 Network Failure
+          </button>
+          <button type="button" id="btnTriggerUncaughtError" class="btn-outline" style="border-color: rgba(236, 72, 153, 0.4); color: #f472b6;">
+            ⚡ Trigger Uncaught Exception
+          </button>
+        </div>
+        <div id="diagSimLog" style="font-size: 11px; color: #94a3b8; margin-top: 8px; font-family: monospace;"></div>
+      </div>
     </div>
 
     <!-- Integration Code Sample -->
-    <div class="card">
-      <div class="card-title">
-        <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
-        How to embed ShowAndTell in any website
+    <div class="card" id="code-snippet-section">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div class="card-title" style="margin-bottom: 0;">
+          <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
+          Ready-to-Use JavaScript Code
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span class="badge" id="snippetModeBadge">Pixel Mode Config</span>
+          <button id="btnCopySnippet" class="btn btn-sm" style="padding: 4px 10px; font-size: 12px; background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa; cursor: pointer; border-radius: 6px; display: flex; align-items: center; gap: 5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+            <span id="btnCopyText">Copy Code</span>
+          </button>
+        </div>
       </div>
       <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
-        Include the single bundle (under 80 KB) and start recording with 1 line of JavaScript:
+        This snippet updates in real time to match your configuration above. Drop it directly into your website:
       </p>
-      <pre><code>&lt;!-- 1. Include the single standalone bundle (Zero backend required) --&gt;
-&lt;script src="show-and-tell.min.js"&gt;&lt;/script&gt;
-
-&lt;script&gt;
-  // A. Default Pixel-Level Screen & Audio Recording (WebM/MP4)
-  const pixelSession = await ShowAndTell.startRecording({
-    mode: 'pixel', // default
-    maxDuration: '2m',
-    audio: { mic: true, system: true }
-  });
-
-  // B. Zero-Permission DOM Session Replay with Scoped PII Masking
-  const domSession = await ShowAndTell.startRecording({
-    mode: 'dom',
-    dom: {
-      maskAllInputs: false, // leave normal inputs readable
-      // Multilevel scoped selectors target duplicate IDs or specific containers:
-      maskSelector: '#customerScope #kycForm, #aadharInput, .pan-input, #aadharDisplay',
-      unmaskSelector: '#searchBox, .public-field'
-    }
-  });
-
-  // Stop when ready and download:
-  // const result = await domSession.stop();
-  // result.downloadHtmlReplay('session-replay.html'); // self-contained offline player
-  // result.downloadJson('events.json');               // raw events stream
-&lt;/script&gt;</code></pre>
+      <pre style="position: relative;"><code id="embedCodeSnippet"></code></pre>
     </div>
     <!-- Popular Use Cases Section (SEO & Solution Guide) -->
     <div class="card" id="use-cases" style="margin-top: 24px;">

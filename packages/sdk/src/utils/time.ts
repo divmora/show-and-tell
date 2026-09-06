@@ -57,7 +57,9 @@ export function parseDurationToMs(value?: number | string): number | undefined {
  * Formats a duration in seconds into 'MM:SS' or 'HH:MM:SS'.
  */
 export function formatDuration(seconds: number): string {
-  if (isNaN(seconds) || seconds < 0) seconds = 0;
+  if (isNaN(seconds) || !Number.isFinite(seconds) || seconds < 0) {
+    seconds = 0;
+  }
   const totalSecs = Math.floor(seconds);
   const hours = Math.floor(totalSecs / 3600);
   const minutes = Math.floor((totalSecs % 3600) / 60);

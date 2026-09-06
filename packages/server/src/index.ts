@@ -104,6 +104,16 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
+// Simulation endpoint for demo diagnostics breadcrumbs
+app.all('/api/simulate-failure', (req, res) => {
+  const status = parseInt(req.query.status as string, 10) || 500;
+  res.status(status).json({
+    success: false,
+    error: req.query.error || 'InternalServerError',
+    timestamp: Date.now()
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`====================================================`);
   console.log(`🚀 ShowAndTell Demo Server running on http://localhost:${PORT}`);

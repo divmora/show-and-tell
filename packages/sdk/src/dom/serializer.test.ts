@@ -337,4 +337,25 @@ describe('DOM Serializer', () => {
     const docSpanText = document.querySelector('.confidential-doc')!.firstChild!;
     expect(serializeNode(docSpanText, ctx)?.textContent).toBe('******-***-***');
   });
+
+  it('correctly serializes select elements and option selected states', () => {
+    document.body.innerHTML = `
+      <select id="categorySelect">
+        <option value="billing">Billing</option>
+        <option value="tech" selected>Technical</option>
+        <option value="general">General</option>
+      </select>
+    `;
+
+    const ctx = createSerializationContext({ maskAllInputs: false });
+    const selectEl = document.getElementById('categorySelect') as HTMLSelectElement;
+    const serialized = serializeNode(selectEl, ctx);
+
+    expect(serialized?.isInput).toBe(true);
+    expect(serialized?.value).toBe('tech');
+    expect(serialized?.selectedIndex).toBe(1);
+
+    const selectedOption = serialized?.children?.find(c => c.attributes?.value === 'tech');
+    expect(selectedOption?.attributes?.selected).toBeDefined();
+  });
 });

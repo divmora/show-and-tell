@@ -1,4 +1,5 @@
 import { 
+  DiagnosticEntry,
   DiscontinueReason, 
   DomRecordingEvent,
   DurationStats, 
@@ -121,7 +122,14 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
   /**
    * Constructs a standard RecordingResult object from final chunks and optional DOM events.
    */
-  createResult(chunks: Blob[], discontinueReason: DiscontinueReason, domEvents?: DomRecordingEvent[]): RecordingResult {
+  createResult(
+    chunks: Blob[], 
+    discontinueReason: DiscontinueReason, 
+    domEvents?: DomRecordingEvent[],
+    diagnostics?: DiagnosticEntry[],
+    cameraBlob?: Blob,
+    cameraUrl?: string
+  ): RecordingResult {
     const stats = this.durationTracker.getStats();
     const finalBlob = new Blob(chunks, { type: this.mimeType });
     const objectUrl = URL.createObjectURL(finalBlob);
@@ -154,6 +162,9 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
       size: finalBlob.size,
       discontinueReason,
       domEvents,
+      diagnostics,
+      cameraBlob,
+      cameraUrl,
       download: (customFilename?: string) => {
         const downloadName = customFilename || filename;
         const a = document.createElement('a');
@@ -171,6 +182,9 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
         // Append both 'recording' and 'video' for backward compatibility
         formData.append('recording', finalBlob, filename);
         formData.append('video', finalBlob, filename);
+        if (cameraBlob) {
+          formData.append('camera', cameraBlob, `camera_${this.id}.webm`);
+        }
         formData.append('id', this.id);
         formData.append('mode', this.mode);
         formData.append('duration', duration.toString());
@@ -190,6 +204,9 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
       },
       revoke: () => {
         URL.revokeObjectURL(objectUrl);
+        if (cameraUrl) {
+          URL.revokeObjectURL(cameraUrl);
+        }
       }
     };
 
@@ -199,12 +216,28 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
         triggerDownload(finalBlob, jsonName);
       };
 
-      result.downloadHtmlReplay = (customFilename?: string) => {
+      result.downloadHtmlReplay = async (customFilename?: string) => {
+        let cameraDataUri: string | undefined;
+        if (cameraBlob) {
+          try {
+            cameraDataUri = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(cameraBlob);
+            });
+          } catch (e) {
+            console.warn('[ShowAndTell] Failed to convert camera blob to data URL:', e);
+          }
+        }
+
         const htmlContent = generateStandalonePlayerHtml({
           events: domEvents || [],
           durationSeconds: duration,
           sessionId: this.id,
-          title: `ShowAndTell Replay - ${this.defaultFilename}`
+          title: `ShowAndTell Replay - ${this.defaultFilename}`,
+          diagnostics,
+          cameraDataUri
         });
         const htmlBlob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
         const htmlName = customFilename || `${this.defaultFilename}.html`;

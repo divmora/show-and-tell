@@ -5,6 +5,7 @@ export type ZoomMode = 'fit' | 1 | 1.5 | 2;
 export interface DomReplayerOptions {
   events: DomRecordingEvent[];
   container: HTMLElement;
+  cameraUrl?: string;
   initialZoom?: ZoomMode;
   onTimeUpdate?: (currentTimeMs: number, totalDurationMs: number) => void;
   onStateChange?: (isPlaying: boolean) => void;
@@ -15,6 +16,9 @@ export interface DomReplayerOptions {
 export class DomReplayer {
   private events: DomRecordingEvent[] = [];
   private container: HTMLElement;
+  private cameraUrl?: string;
+  private cameraWrapper?: HTMLElement;
+  private cameraVideo?: HTMLVideoElement;
   private viewportSpacer?: HTMLElement;
   private viewportWrapper?: HTMLElement;
   private iframe?: HTMLIFrameElement;
@@ -51,6 +55,7 @@ export class DomReplayer {
   constructor(options: DomReplayerOptions) {
     this.events = options.events || [];
     this.container = options.container;
+    this.cameraUrl = options.cameraUrl;
     this.zoomMode = options.initialZoom || 'fit';
     this.onTimeUpdate = options.onTimeUpdate;
     this.onStateChange = options.onStateChange;
@@ -111,7 +116,7 @@ export class DomReplayer {
     this.iframe.style.height = `${this.recordedViewHeight}px`;
     this.iframe.style.border = 'none';
     this.iframe.style.display = 'block';
-    this.iframe.sandbox.add('allow-same-origin');
+    this.iframe.setAttribute('sandbox', 'allow-same-origin');
     this.viewportWrapper.appendChild(this.iframe);
 
     // 3. Virtual Cursor
@@ -131,6 +136,47 @@ export class DomReplayer {
       </svg>
     `;
     this.viewportWrapper.appendChild(this.virtualCursor);
+
+    // 4. Synchronized Camera Bubble (if camera was recorded)
+    if (this.cameraUrl) {
+      this.cameraWrapper = document.createElement('div');
+      this.cameraWrapper.className = 'sat-replay-camera-wrapper';
+      this.cameraWrapper.style.position = 'absolute';
+      this.cameraWrapper.style.zIndex = '999990';
+      this.cameraWrapper.style.overflow = 'hidden';
+      this.cameraWrapper.style.backgroundColor = '#111827';
+      this.cameraWrapper.style.border = '2px solid rgba(255, 255, 255, 0.25)';
+      this.cameraWrapper.style.filter = 'drop-shadow(0 10px 25px rgba(0,0,0,0.5))';
+      this.cameraWrapper.style.transition = 'width 0.2s ease, height 0.2s ease, border-radius 0.2s ease';
+      this.cameraWrapper.style.pointerEvents = 'none';
+
+      const firstCamEvent = this.events.find(e => e.type === 'camera_position') as any;
+      const initialW = firstCamEvent?.width || 160;
+      const initialH = firstCamEvent?.height || 160;
+      const initialX = firstCamEvent?.x ?? 24;
+      const initialY = firstCamEvent?.y ?? Math.max(10, this.recordedViewHeight - initialH - 24);
+      const isRect = firstCamEvent?.shape === 'rect';
+
+      this.cameraWrapper.style.width = `${initialW}px`;
+      this.cameraWrapper.style.height = `${initialH}px`;
+      this.cameraWrapper.style.left = `${initialX}px`;
+      this.cameraWrapper.style.top = `${initialY}px`;
+      this.cameraWrapper.style.borderRadius = isRect ? '12px' : '50%';
+
+      this.cameraVideo = document.createElement('video');
+      this.cameraVideo.src = this.cameraUrl;
+      this.cameraVideo.playsInline = true;
+      this.cameraVideo.muted = true;
+      this.cameraVideo.autoplay = false;
+      this.cameraVideo.style.width = '100%';
+      this.cameraVideo.style.height = '100%';
+      this.cameraVideo.style.objectFit = 'cover';
+      this.cameraVideo.style.transform = 'scaleX(-1)';
+      this.cameraVideo.style.pointerEvents = 'none';
+
+      this.cameraWrapper.appendChild(this.cameraVideo);
+      this.viewportWrapper.appendChild(this.cameraWrapper);
+    }
 
     this.viewportSpacer.appendChild(this.viewportWrapper);
     this.container.appendChild(this.viewportSpacer);
@@ -276,10 +322,10 @@ export class DomReplayer {
     doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><base href="${baseHref}"></head><body></body></html>`);
     doc.close();
 
-    // Disable link navigations and interactions inside replay iframe
+    // Disable link navigations and pointer clicks inside replay iframe
     const style = doc.createElement('style');
     style.textContent = `
-      * { pointer-events: none !important; user-select: none !important; }
+      * { pointer-events: none !important; }
       body { margin: 0; padding: 0; }
     `;
     doc.head.appendChild(style);
@@ -293,6 +339,9 @@ export class DomReplayer {
     this.idToNode.clear();
 
     if (!this.iframeDoc) return;
+
+    const currentSel = this.iframeDoc.getSelection();
+    if (currentSel) currentSel.removeAllRanges();
 
     // Rebuild initial snapshot
     const snapshotEvent = this.events.find(e => e.type === 'dom_snapshot');
@@ -312,7 +361,7 @@ export class DomReplayer {
         // Re-inject safety style
         const style = this.iframeDoc.createElement('style');
         style.textContent = `
-          * { pointer-events: none !important; user-select: none !important; }
+          * { pointer-events: none !important; }
         `;
         if (this.iframeDoc.head) {
           this.iframeDoc.head.appendChild(style);
@@ -331,11 +380,23 @@ export class DomReplayer {
       this.virtualCursor.style.display = 'none';
     }
 
+    if (this.cameraVideo) {
+      this.cameraVideo.currentTime = 0;
+      const firstCamEvent = this.events.find(e => e.type === 'camera_position') as any;
+      if (this.cameraWrapper && firstCamEvent) {
+        this.cameraWrapper.style.width = `${firstCamEvent.width}px`;
+        this.cameraWrapper.style.height = `${firstCamEvent.height}px`;
+        this.cameraWrapper.style.left = `${firstCamEvent.x}px`;
+        this.cameraWrapper.style.top = `${firstCamEvent.y}px`;
+        this.cameraWrapper.style.borderRadius = firstCamEvent.shape === 'rect' ? '12px' : '50%';
+      }
+    }
+
     this.onTimeUpdate?.(0, this.totalDurationMs);
   }
 
   private buildDomNode(node: SerializedNode): Node | null {
-    if (!this.iframeDoc) return null;
+    if (!this.iframeDoc || !node) return null;
 
     if (node.type === 'text') {
       const textNode = this.iframeDoc.createTextNode(node.textContent || '');
@@ -357,22 +418,41 @@ export class DomReplayer {
         }
       }
 
-      // Handle form values
-      if (node.isInput) {
-        const inputEl = el as HTMLInputElement;
-        if (inputEl.type === 'checkbox' || inputEl.type === 'radio') {
-          inputEl.checked = !!node.value;
-        } else if (node.value !== undefined) {
-          inputEl.value = String(node.value);
-        }
-      }
-
-      // Children
+      // Children (append first so <select> options are available before setting value)
       if (node.children) {
         for (const child of node.children) {
           const childNode = this.buildDomNode(child);
           if (childNode) {
             el.appendChild(childNode);
+          }
+        }
+      }
+
+      // Handle form values (after children are appended)
+      if (node.isInput) {
+        const tagName = el.tagName.toLowerCase();
+        if (tagName === 'select') {
+          const selectEl = el as HTMLSelectElement;
+          if (node.value !== undefined) {
+            selectEl.value = String(node.value);
+          }
+          if (node.selectedIndex !== undefined && selectEl.selectedIndex !== node.selectedIndex) {
+            selectEl.selectedIndex = node.selectedIndex;
+          }
+          for (let i = 0; i < selectEl.options.length; i++) {
+            const opt = selectEl.options[i];
+            if (node.value !== undefined && opt.value === String(node.value)) {
+              opt.selected = true;
+            } else if (node.selectedIndex !== undefined && i === node.selectedIndex) {
+              opt.selected = true;
+            }
+          }
+        } else {
+          const inputEl = el as HTMLInputElement;
+          if (inputEl.type === 'checkbox' || inputEl.type === 'radio') {
+            inputEl.checked = !!node.value;
+          } else if (node.value !== undefined) {
+            inputEl.value = String(node.value);
           }
         }
       }
@@ -393,6 +473,11 @@ export class DomReplayer {
     this.lastRafTimestamp = performance.now();
     this.onStateChange?.(true);
 
+    if (this.cameraVideo) {
+      this.cameraVideo.playbackRate = this.playbackSpeed;
+      this.cameraVideo.play().catch(() => {});
+    }
+
     const loop = (timestamp: number) => {
       if (!this.isPlaying) return;
 
@@ -402,6 +487,13 @@ export class DomReplayer {
 
       this.dispatchEventsUpTo(this.currentTimeMs);
       this.onTimeUpdate?.(this.currentTimeMs, this.totalDurationMs);
+
+      if (this.cameraVideo && Number.isFinite(this.cameraVideo.currentTime)) {
+        const expectedSec = this.currentTimeMs / 1000;
+        if (Math.abs(this.cameraVideo.currentTime - expectedSec) > 0.3) {
+          this.cameraVideo.currentTime = expectedSec;
+        }
+      }
 
       if (this.currentTimeMs >= this.totalDurationMs) {
         this.pause();
@@ -422,6 +514,9 @@ export class DomReplayer {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = undefined;
     }
+    if (this.cameraVideo) {
+      this.cameraVideo.pause();
+    }
     this.onStateChange?.(false);
   }
 
@@ -441,6 +536,9 @@ export class DomReplayer {
     this.resetToStart();
     this.dispatchEventsUpTo(clamped);
     this.currentTimeMs = clamped;
+    if (this.cameraVideo) {
+      this.cameraVideo.currentTime = Math.max(0, clamped / 1000);
+    }
     this.onTimeUpdate?.(this.currentTimeMs, this.totalDurationMs);
 
     if (wasPlaying) {
@@ -450,6 +548,9 @@ export class DomReplayer {
 
   setSpeed(speed: number): void {
     this.playbackSpeed = speed;
+    if (this.cameraVideo) {
+      this.cameraVideo.playbackRate = speed;
+    }
   }
 
   private dispatchEventsUpTo(targetTimeMs: number): void {
@@ -617,8 +718,64 @@ export class DomReplayer {
             } else {
               inputEl.value = String(event.value);
             }
-          } else if (tagName === 'textarea' || tagName === 'select') {
-            (el as HTMLInputElement).value = String(event.value);
+          } else if (tagName === 'select') {
+            const selectEl = el as HTMLSelectElement;
+            selectEl.value = String(event.value);
+            if (event.selectedIndex !== undefined && selectEl.selectedIndex !== event.selectedIndex) {
+              selectEl.selectedIndex = event.selectedIndex;
+            }
+            for (let i = 0; i < selectEl.options.length; i++) {
+              const opt = selectEl.options[i];
+              if (opt.value === String(event.value) || (event.selectedIndex !== undefined && i === event.selectedIndex)) {
+                opt.selected = true;
+              } else {
+                opt.selected = false;
+              }
+            }
+            try {
+              selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+            } catch {}
+          } else if (tagName === 'textarea') {
+            (el as HTMLTextAreaElement).value = String(event.value);
+          }
+        }
+        break;
+      }
+
+      case 'selection': {
+        if (!this.iframeDoc) break;
+        const sel = this.iframeDoc.getSelection();
+        if (!sel) break;
+        sel.removeAllRanges();
+        if (event.ranges && event.ranges.length > 0) {
+          for (const r of event.ranges) {
+            const startNode = this.idToNode.get(r.startNodeId);
+            const endNode = this.idToNode.get(r.endNodeId);
+            if (startNode && endNode) {
+              try {
+                const range = this.iframeDoc.createRange();
+                const startMax = startNode.nodeType === Node.TEXT_NODE ? (startNode.textContent?.length || 0) : startNode.childNodes.length;
+                const endMax = endNode.nodeType === Node.TEXT_NODE ? (endNode.textContent?.length || 0) : endNode.childNodes.length;
+                range.setStart(startNode, Math.min(r.startOffset, startMax));
+                range.setEnd(endNode, Math.min(r.endOffset, endMax));
+                sel.addRange(range);
+              } catch {}
+            }
+          }
+        }
+        break;
+      }
+
+      case 'camera_position': {
+        if (this.cameraWrapper) {
+          this.cameraWrapper.style.display = 'block';
+          this.cameraWrapper.style.left = `${event.x}px`;
+          this.cameraWrapper.style.top = `${event.y}px`;
+          this.cameraWrapper.style.width = `${event.width}px`;
+          this.cameraWrapper.style.height = `${event.height}px`;
+          this.cameraWrapper.style.borderRadius = event.shape === 'rect' ? '12px' : '50%';
+          if (this.cameraVideo && event.isMuted !== undefined) {
+            this.cameraVideo.style.opacity = event.isMuted ? '0.2' : '1';
           }
         }
         break;
@@ -628,6 +785,15 @@ export class DomReplayer {
 
   destroy(): void {
     this.pause();
+    if (this.cameraVideo) {
+      this.cameraVideo.pause();
+      this.cameraVideo.src = '';
+      this.cameraVideo = undefined;
+    }
+    if (this.cameraWrapper) {
+      this.cameraWrapper.remove();
+      this.cameraWrapper = undefined;
+    }
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
       this.resizeObserver = undefined;

@@ -277,10 +277,14 @@ export class DomRecorder {
     window.addEventListener('scroll', handleScroll, { passive: true });
     this.cleanupFns.push(() => window.removeEventListener('scroll', handleScroll));
 
-    // Form Inputs
+    // Form Inputs & Select Controls
     const handleInput = (e: Event) => {
-      const target = e.target as HTMLElement;
+      let target = e.target as HTMLElement;
       if (!target || shouldIgnoreNode(target, this.ctx)) return;
+
+      if (target instanceof HTMLOptionElement && target.parentElement instanceof HTMLSelectElement) {
+        target = target.parentElement;
+      }
 
       const targetId = this.ctx.nodeToId.get(target);
       if (targetId === undefined) return;
@@ -305,7 +309,16 @@ export class DomRecorder {
             value: val
           });
         }
-      } else if (target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+      } else if (target instanceof HTMLSelectElement) {
+        const val = isMasked ? '' : target.value;
+        this.pushEvent({
+          type: 'input',
+          timestamp: this.getRelativeTime(),
+          targetId,
+          value: val,
+          selectedIndex: isMasked ? -1 : target.selectedIndex
+        });
+      } else if (target instanceof HTMLTextAreaElement) {
         const val = isMasked ? '••••••••' : target.value;
         this.pushEvent({
           type: 'input',
@@ -317,8 +330,53 @@ export class DomRecorder {
     };
     window.addEventListener('input', handleInput, { passive: true, capture: true });
     window.addEventListener('change', handleInput, { passive: true, capture: true });
+    window.addEventListener('select', handleInput, { passive: true, capture: true });
     this.cleanupFns.push(() => window.removeEventListener('input', handleInput, true));
     this.cleanupFns.push(() => window.removeEventListener('change', handleInput, true));
+    this.cleanupFns.push(() => window.removeEventListener('select', handleInput, true));
+
+    // Text Selection Tracking
+    let lastSelectionTimeout: number | undefined;
+    const handleSelectionChange = () => {
+      if (typeof window === 'undefined') return;
+      if (lastSelectionTimeout !== undefined) {
+        window.clearTimeout(lastSelectionTimeout);
+      }
+      lastSelectionTimeout = window.setTimeout(() => {
+        const sel = window.getSelection();
+        if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
+          return;
+        }
+
+        const ranges: { startNodeId: number; startOffset: number; endNodeId: number; endOffset: number }[] = [];
+        for (let i = 0; i < sel.rangeCount; i++) {
+          const r = sel.getRangeAt(i);
+          const startId = this.ctx.nodeToId.get(r.startContainer);
+          const endId = this.ctx.nodeToId.get(r.endContainer);
+          if (startId !== undefined && endId !== undefined) {
+            ranges.push({
+              startNodeId: startId,
+              startOffset: r.startOffset,
+              endNodeId: endId,
+              endOffset: r.endOffset
+            });
+          }
+        }
+
+        if (ranges.length > 0) {
+          this.pushEvent({
+            type: 'selection',
+            timestamp: this.getRelativeTime(),
+            ranges
+          });
+        }
+      }, 50);
+    };
+    document.addEventListener('selectionchange', handleSelectionChange, { passive: true });
+    this.cleanupFns.push(() => {
+      if (lastSelectionTimeout !== undefined) clearTimeout(lastSelectionTimeout);
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    });
 
     // Viewport Resize
     const handleResize = () => {
@@ -331,5 +389,19 @@ export class DomRecorder {
     };
     window.addEventListener('resize', handleResize, { passive: true });
     this.cleanupFns.push(() => window.removeEventListener('resize', handleResize));
+  }
+
+  recordCameraPosition(state: { x: number; y: number; width: number; height: number; shape: 'circle' | 'rect'; isMuted?: boolean }): void {
+    if (this.isPaused) return;
+    this.pushEvent({
+      type: 'camera_position',
+      timestamp: this.getRelativeTime(),
+      x: state.x,
+      y: state.y,
+      width: state.width,
+      height: state.height,
+      shape: state.shape,
+      isMuted: state.isMuted
+    });
   }
 }
