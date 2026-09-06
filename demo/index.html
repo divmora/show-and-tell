@@ -4,26 +4,64 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ShowAndTell - Standalone Screen Recording SDK Demo</title>
-  <link rel="stylesheet" href="demo.css" />
+  <link rel="stylesheet" href="demo.css?v=3" />
+  <style>
+    .top-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; margin-bottom: 32px; }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none !important; font-weight: 700; font-size: 16px; color: #f0f6fc; }
+    .nav-version { font-size: 11px; font-weight: 600; color: #60a5fa; background: rgba(59, 130, 246, 0.18); border: 1px solid rgba(59, 130, 246, 0.35); padding: 2px 8px; border-radius: 9999px; }
+    .nav-actions { display: flex; align-items: center; gap: 12px; }
+    .nav-link { color: #8b949e !important; text-decoration: none !important; font-size: 13px; font-weight: 500; }
+    .nav-github-btn { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(180deg, #2ea043 0%, #238636 100%); color: #ffffff !important; text-decoration: none !important; font-size: 13px; font-weight: 600; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+    .nav-gh-name { font-size: 11px; opacity: 0.85; font-weight: 400; border-left: 1px solid rgba(255, 255, 255, 0.3); padding-left: 8px; margin-left: 2px; }
+    .hero-actions { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 22px; flex-wrap: wrap; }
+    .hero-btn { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; padding: 10px 20px; border-radius: 10px; text-decoration: none !important; }
+    .hero-btn-primary { background: #2563eb; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.2); }
+    .hero-btn-github { background: rgba(255, 255, 255, 0.08); color: #f0f6fc !important; border: 1px solid rgba(255, 255, 255, 0.22); }
+    .hero-gh-badge { font-size: 11px; background: rgba(255, 255, 255, 0.12); padding: 2px 8px; border-radius: 6px; color: #93c5fd; }
+  </style>
   <!-- ShowAndTell Standalone JS SDK Bundle -->
   <script src="dist/show-and-tell.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <header>
-      <div class="header-nav">
-        <span class="badge">SDK Live Playground</span>
-        <a href="https://github.com/divmora/show-and-tell" target="_blank" rel="noopener noreferrer" class="github-btn" title="View ShowAndTell on GitHub">
+    <!-- Top Navigation Bar -->
+    <nav class="top-nav">
+      <div class="nav-brand">
+        <span class="nav-logo">🎬</span>
+        <span class="nav-title">ShowAndTell</span>
+        <span class="nav-version">v0.1.0</span>
+      </div>
+      <div class="nav-actions">
+        <a href="standalone.html" class="nav-link">Zero-Server Demo</a>
+        <a href="https://github.com/divmora/show-and-tell" target="_blank" rel="noopener noreferrer" class="nav-github-btn" title="View ShowAndTell on GitHub">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
           </svg>
-          GitHub
+          <span>GitHub</span>
+          <span class="nav-gh-name">divmora/show-and-tell</span>
         </a>
       </div>
+    </nav>
+
+    <header>
+      <div class="badge">SDK Live Playground</div>
       <h1>ShowAndTell Screen Recorder</h1>
       <p class="subtitle">
         100% standalone, zero-server-dependency JavaScript screen recording library with audio mixing, max duration limits, and browser reload resilience.
       </p>
+      <div class="hero-actions">
+        <a href="#playground" class="hero-btn hero-btn-primary">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Try Live Playground
+        </a>
+        <a href="https://github.com/divmora/show-and-tell" target="_blank" rel="noopener noreferrer" class="hero-btn hero-btn-github" title="View Source on GitHub">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>View on GitHub</span>
+          <span class="hero-gh-badge">divmora/show-and-tell</span>
+        </a>
+      </div>
     </header>
 
     <div class="info-alert">
@@ -35,7 +73,7 @@
       </div>
     </div>
 
-    <div class="grid">
+    <div class="grid" id="playground">
       <!-- Configuration Panel -->
       <div class="card">
         <div class="card-title">
@@ -179,6 +217,20 @@
     </div>
 
     <footer class="demo-footer">
+      <div class="footer-github-card">
+        <div class="footer-gh-left">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="#f0f6fc">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <div>
+            <div class="footer-gh-title">github.com/divmora/show-and-tell</div>
+            <div class="footer-gh-desc">Open-source repository, TypeScript SDK source, documentation, and releases</div>
+          </div>
+        </div>
+        <a href="https://github.com/divmora/show-and-tell" target="_blank" rel="noopener noreferrer" class="footer-gh-btn">
+          Star on GitHub ⭐
+        </a>
+      </div>
       <p>
         <strong>ShowAndTell</strong> is developed by <a href="https://github.com/divmora" target="_blank" rel="noopener noreferrer">DIVMORA Technologies</a>.
       </p>
