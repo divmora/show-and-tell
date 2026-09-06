@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShowAndTell - Standalone Zero-Server Drop-in Example</title>
+  <!-- Load the standalone bundle directly -->
+  <script src="../packages/sdk/dist/show-and-tell.min.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+    .box {
+      text-align: center;
+      background: #1e293b;
+      padding: 40px;
+      border-radius: 16px;
+      border: 1px solid #334155;
+      max-width: 500px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover { background: #1d4ed8; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Standalone ShowAndTell Drop-In</h2>
+    <p>This page works directly as a static file with no server backend required.</p>
+    <button onclick="startDemo()">Start 15s Screen Recording</button>
+  </div>
+
+  <script>
+    async function startDemo() {
+      // 1-line call: sets maxDuration to 15 seconds, records screen + mic with floating UI
+      const session = await ShowAndTell.startRecording({
+        maxDuration: 15,
+        audio: { mic: true, system: true }
+      });
+      console.log('Recording started! Session:', session);
+    }
+  </script>
+</body>
+</html>

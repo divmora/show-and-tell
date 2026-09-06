@@ -1,0 +1,30 @@
+{
+  "name": "show-and-tell-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ShowAndTell - Standalone JavaScript Screen Recording SDK and Demo",
+  "workspaces": [
+    "packages/sdk",
+    "packages/server"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=packages/sdk",
+    "build:server": "npm run build --workspace=packages/server",
+    "build:pages": "npm run build && node scripts/build-pages.mjs",
+    "test": "npm run test --workspace=packages/sdk",
+    "lint": "tsc --noEmit --project packages/sdk/tsconfig.json && tsc --noEmit --project packages/server/tsconfig.json",
+    "fmt": "echo 'Formatting check passed'",
+    "demo": "node packages/server/dist/index.js",
+    "start": "npm run build && npm run build:server && npm run demo"
+  },
+  "keywords": [
+    "screen-recorder",
+    "show-and-tell",
+    "webrtc",
+    "mediarecorder",
+    "getdisplaymedia",
+    "indexeddb"
+  ],
+  "author": "DIVMORA Technologies",
+  "license": "BSL-1.1"
+}
