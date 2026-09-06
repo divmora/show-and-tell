@@ -1,6 +1,6 @@
 {
   "name": "show-and-tell",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Standalone JavaScript Screen Recording SDK with Audio Mixing, Reload Resilience & Max Duration Control",
   "main": "./dist/show-and-tell.cjs.js",
   "module": "./dist/show-and-tell.esm.js",
