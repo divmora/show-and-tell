@@ -18,11 +18,17 @@
   },
   "keywords": [
     "screen-recording",
+    "screen-recorder",
+    "screen-recording-sdk",
     "getdisplaymedia",
     "mediarecorder",
     "video-capture",
+    "audio-mixing",
     "screen-cast",
-    "webrtc"
+    "webrtc",
+    "bug-reporting",
+    "loom-alternative",
+    "indexeddb"
   ],
   "author": "DIVMORA Technologies",
   "license": "BSL-1.1",

@@ -3,7 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ShowAndTell - Standalone Screen Recording SDK Demo</title>
+  <title>ShowAndTell - Standalone JavaScript Screen Recording SDK Demo</title>
+  <meta name="description" content="100% standalone, zero-server JavaScript screen recording SDK with Web Audio mixing, max duration limits, reload resilience, and isolated Shadow DOM UI." />
+  <meta name="keywords" content="screen recording sdk, javascript screen recorder, client side screen recorder, web audio mixing, loom alternative, bug reporting video, getDisplayMedia, MediaRecorder, browser reload recovery, indexeddb video buffer" />
+  <meta name="author" content="DIVMORA Technologies" />
+  <link rel="canonical" href="https://divmora.github.io/show-and-tell/" />
+
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://divmora.github.io/show-and-tell/" />
+  <meta property="og:title" content="ShowAndTell - Standalone Screen Recording SDK" />
+  <meta property="og:description" content="100% standalone, zero-server JavaScript screen recording library with audio mixing, max duration limits, and browser reload resilience." />
+  <meta property="og:site_name" content="ShowAndTell by DIVMORA" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="ShowAndTell - Standalone Screen Recording SDK" />
+  <meta name="twitter:description" content="100% standalone, zero-server JavaScript screen recording SDK with Web Audio mixing and browser reload resilience." />
+
+  <!-- Schema.org SoftwareApplication Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "ShowAndTell",
+    "operatingSystem": "Web Browsers",
+    "applicationCategory": "MultimediaApplication",
+    "description": "Standalone, zero-server-dependency JavaScript screen recording SDK with audio mixing, max duration limits, and browser reload resilience.",
+    "url": "https://divmora.github.io/show-and-tell/",
+    "author": {
+      "@type": "Organization",
+      "name": "DIVMORA Technologies",
+      "url": "https://divmora.com"
+    },
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
+
   <link rel="stylesheet" href="demo.css?v=3" />
   <style>
     .top-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 14px; margin-bottom: 32px; }
@@ -18,6 +58,13 @@
     .hero-btn-primary { background: #2563eb; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.2); }
     .hero-btn-github { background: rgba(255, 255, 255, 0.08); color: #f0f6fc !important; border: 1px solid rgba(255, 255, 255, 0.22); }
     .hero-gh-badge { font-size: 11px; background: rgba(255, 255, 255, 0.12); padding: 2px 8px; border-radius: 6px; color: #93c5fd; }
+    .use-cases-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; margin-top: 18px; }
+    .use-case-card { background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 20px; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.2s, transform 0.2s; }
+    .use-case-card:hover { border-color: rgba(59, 130, 246, 0.4); transform: translateY(-2px); }
+    .use-case-icon { font-size: 26px; }
+    .use-case-title { font-size: 15px; font-weight: 600; color: #f0f6fc; }
+    .use-case-desc { font-size: 13px; color: #8b949e; line-height: 1.5; }
+    .use-case-tag { display: inline-block; font-size: 11px; font-weight: 500; color: #60a5fa; background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.25); padding: 3px 8px; border-radius: 6px; width: fit-content; margin-top: auto; }
   </style>
   <!-- ShowAndTell Standalone JS SDK Bundle -->
   <script src="dist/show-and-tell.min.js"></script>
@@ -32,7 +79,10 @@
         <span class="nav-version">v0.1.0</span>
       </div>
       <div class="nav-actions">
+        <a href="#playground" class="nav-link">Playground</a>
+        <a href="#use-cases" class="nav-link">Use Cases</a>
         <a href="standalone.html" class="nav-link">Zero-Server Demo</a>
+        <a href="https://deepwiki.com/divmora/show-and-tell" target="_blank" rel="noopener noreferrer" class="nav-link" title="Ask DeepWiki AI Documentation">DeepWiki ↗</a>
         <a href="https://github.com/divmora/show-and-tell" target="_blank" rel="noopener noreferrer" class="nav-github-btn" title="View ShowAndTell on GitHub">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
             <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
@@ -214,6 +264,70 @@
   result.download('my-presentation.webm');
   console.log('Video Blob:', result.blob);
 &lt;/script&gt;</code></pre>
+    <!-- Popular Use Cases Section (SEO & Solution Guide) -->
+    <div class="card" id="use-cases" style="margin-top: 24px;">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        Popular Use Cases & Solutions
+      </div>
+      <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 6px;">
+        ShowAndTell provides lightweight, zero-server client-side screen recording engineered for privacy, instant drop-in integration, and zero backend maintenance.
+      </p>
+      <div class="use-cases-grid">
+        <div class="use-case-card">
+          <div class="use-case-icon">🐞</div>
+          <div class="use-case-title">In-App Bug Reporting & QA</div>
+          <div class="use-case-desc">
+            Allow users and QA testers to record repro steps with voiceover narration. Video chunks buffer in IndexedDB so crashes never lose data.
+          </div>
+          <span class="use-case-tag">Reload Resilient</span>
+        </div>
+
+        <div class="use-case-card">
+          <div class="use-case-icon">⏱️</div>
+          <div class="use-case-title">Timed Coding Tests & EdTech</div>
+          <div class="use-case-desc">
+            Enforce strict time limits on candidate interview coding walkthroughs or student homework presentations with pause-aware duration clocks.
+          </div>
+          <span class="use-case-tag">Max Duration Cap</span>
+        </div>
+
+        <div class="use-case-card">
+          <div class="use-case-icon">💬</div>
+          <div class="use-case-title">Async Support & Sales Video</div>
+          <div class="use-case-desc">
+            Build Loom-like async video messaging directly into Zendesk, Intercom, or CRM portals without requiring desktop apps or extensions.
+          </div>
+          <span class="use-case-tag">Zero Extension</span>
+        </div>
+
+        <div class="use-case-card">
+          <div class="use-case-icon">🎨</div>
+          <div class="use-case-title">Creative Apps & Showcases</div>
+          <div class="use-case-desc">
+            Enable 1-click walkthroughs for canvas editors, Figma-like tools, and dashboards, mixing mic voiceover with application tab audio.
+          </div>
+          <span class="use-case-tag">Web Audio Mixing</span>
+        </div>
+
+        <div class="use-case-card">
+          <div class="use-case-icon">⚡</div>
+          <div class="use-case-title">Static Sites & Offline PWAs</div>
+          <div class="use-case-desc">
+            Run 100% in client browsers on GitHub Pages, Netlify, or offline PWAs with zero video processing servers or cloud transcoding bills.
+          </div>
+          <span class="use-case-tag">100% Standalone</span>
+        </div>
+
+        <div class="use-case-card">
+          <div class="use-case-icon">🛡️</div>
+          <div class="use-case-title">Audit Trails & Incident Triage</div>
+          <div class="use-case-desc">
+            Capture visual logs of sensitive cloud management, infrastructure, or admin console operations for compliance and security audit trails.
+          </div>
+          <span class="use-case-tag">Client Privacy</span>
+        </div>
+      </div>
     </div>
 
     <footer class="demo-footer">
@@ -237,6 +351,10 @@
       <div class="footer-links">
         <a href="https://github.com/divmora/show-and-tell" target="_blank" rel="noopener noreferrer">
           GitHub Repository
+        </a>
+        <span class="dot">•</span>
+        <a href="https://deepwiki.com/divmora/show-and-tell" target="_blank" rel="noopener noreferrer">
+          DeepWiki AI Docs
         </a>
         <span class="dot">•</span>
         <a href="https://github.com/divmora/show-and-tell#readme" target="_blank" rel="noopener noreferrer">

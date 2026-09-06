@@ -20,10 +20,15 @@
   "keywords": [
     "screen-recorder",
     "show-and-tell",
+    "screen-recording-sdk",
     "webrtc",
     "mediarecorder",
     "getdisplaymedia",
-    "indexeddb"
+    "audio-mixing",
+    "indexeddb",
+    "bug-reporting",
+    "loom-alternative",
+    "in-app-recording"
   ],
   "author": "DIVMORA Technologies",
   "license": "BSL-1.1"

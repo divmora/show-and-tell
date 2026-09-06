@@ -9,6 +9,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Bundled_with-Vite-646CFF)](https://vitejs.dev/)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-GitHub_Pages-22c55e?logo=github)](https://divmora.github.io/show-and-tell/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/divmora/show-and-tell)
 
 ---
 
@@ -23,6 +24,21 @@
 - **Browser Reload & Navigation Resilience**: Buffers 1-second video timeslices into `IndexedDB`. If the user refreshes or navigates away, the pre-reload recording can be recovered with 1 click.
 - **Isolated Floating UI Widget**: Draggable on-screen recording toolbar embedded in Shadow DOM with inlined CSS (zero CSS collisions with Tailwind, Bootstrap, etc.).
 - **Post-Recording Preview Modal**: Built-in video player with instant download and optional upload endpoints.
+
+---
+
+## 🎯 Popular Use Cases
+
+ShowAndTell provides lightweight client-side screen capture designed for privacy, ease of integration, and zero server costs:
+
+| Use Case | Why ShowAndTell | Configuration Highlight |
+| :--- | :--- | :--- |
+| **🐞 In-App Bug Reporting & QA Feedback** | Users record reproduction steps with voiceover narration. Reload resilience ensures video chunks are never lost if the app crashes or navigates away. | `audio: { mic: true }, uploadEndpoint: '/api/tickets'` |
+| **⏱️ Timed Coding Tests & EdTech (HRTech)** | Enforce strict time limits on candidate coding walkthroughs or student submissions with pause-aware duration tracking. | `maxDuration: '5m', warningThreshold: 30` |
+| **💬 Async Customer Support & Sales** | Embed 1-click video messaging into Zendesk, Intercom, or CRM portals without requiring users to install desktop apps or browser extensions. | `ui: true, previewModal: true` |
+| **🎨 Creative App Showcases & Demos** | Figma-like editors, canvas apps, and dashboard builders can let users export walkthroughs mixing microphone commentary with app sound effects. | `audio: { mic: true, system: true }` |
+| **⚡ Static Sites, Jamstack & Offline PWAs** | Run entirely in client browsers on GitHub Pages, Netlify, or offline PWAs without managing streaming servers or transcoding clusters. | Zero backend required; works directly via `file://` |
+| **🛡️ Compliance & Incident Audit Trails** | DevOps and cloud engineers can record visual audit logs of high-stakes cloud management console actions. | `timeslice: 1000, storage: true` |
 
 ---
 
@@ -176,6 +192,7 @@ make demo
 
 ## 🤝 Community & Standards
 
+- **[DeepWiki Documentation](https://deepwiki.com/divmora/show-and-tell)**: Interactive AI architecture exploration, code walkthroughs, and Q&A.
 - **[Contributing Guide](CONTRIBUTING.md)**: Guidelines for reporting bugs, submitting PRs, and Conventional Commits.
 - **[Code of Conduct](https://github.com/divmora/.github/blob/main/CODE_OF_CONDUCT.md)**: Community standards and expectations.
 - **[Security Policy](SECURITY.md)**: Responsible disclosure guidelines with a 48-hour SLA.
