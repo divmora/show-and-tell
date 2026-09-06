@@ -46,6 +46,7 @@ show-and-tell/
 ├── LICENSE                          # Business Source License 1.1 (BSL 1.1)
 ├── Makefile                         # Standard automation targets
 ├── README.md                        # Project documentation & status badges
+├── ROADMAP.md                       # Living product roadmap (future items to implement/prune)
 ├── SECURITY.md                      # Security vulnerability reporting policy
 └── CONTRIBUTING.md                  # Contribution guidelines & Conventional Commits
 ```
@@ -114,3 +115,12 @@ make build
 # 4. Clean up any artifacts
 make clean
 ```
+
+---
+
+## 6. Living Product Roadmap Management
+
+`ROADMAP.md` is the central living document tracking future capabilities, optimizations, and technical debt:
+- **Adding Items**: Whenever you or the user identify a capability, optimization, or edge-case improvement for future work, add it to `ROADMAP.md` under the appropriate category.
+- **Removing Items**: Once a feature is fully implemented, verified with tests, and committed, **remove it from `ROADMAP.md`** immediately to keep the roadmap focused on active upcoming tasks.
+
