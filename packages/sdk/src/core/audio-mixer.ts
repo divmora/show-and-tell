@@ -12,8 +12,8 @@ export class AudioMixer {
   /**
    * Initializes Web Audio context and mixes display audio with microphone audio.
    */
-  mix(displayStream: MediaStream, micStream?: MediaStream): MediaStreamTrack[] {
-    const displayAudioTracks = displayStream.getAudioTracks();
+  mix(displayStream?: MediaStream, micStream?: MediaStream): MediaStreamTrack[] {
+    const displayAudioTracks = displayStream ? displayStream.getAudioTracks() : [];
     const micAudioTracks = micStream ? micStream.getAudioTracks() : [];
 
     // If no mic is used and only display audio exists, return display audio directly

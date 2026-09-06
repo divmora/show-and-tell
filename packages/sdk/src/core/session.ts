@@ -1,6 +1,8 @@
 import { 
   DiscontinueReason, 
+  DomRecordingEvent,
   DurationStats, 
+  RecordingMode,
   RecordingResult, 
   RecordingSession, 
   RecordingState, 
@@ -10,12 +12,14 @@ import { AudioMixer } from './audio-mixer';
 import { DurationTracker } from './duration-tracker';
 import { EventEmitter } from '../utils/event-emitter';
 import { getExtensionForMimeType } from '../utils/codecs';
+import { generateStandalonePlayerHtml } from '../dom/standalone-player';
 
 export interface SessionInitOptions {
   id: string;
   mimeType: string;
+  mode?: RecordingMode;
   durationTracker: DurationTracker;
-  audioMixer: AudioMixer;
+  audioMixer?: AudioMixer;
   filename?: string;
   onStopRequest: () => Promise<RecordingResult>;
   onPauseRequest: () => void;
@@ -24,10 +28,11 @@ export interface SessionInitOptions {
 
 export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, any[]>> implements RecordingSession {
   public readonly id: string;
+  public readonly mode: RecordingMode;
   public state: RecordingState = 'idle';
   private mimeType: string;
   private durationTracker: DurationTracker;
-  private audioMixer: AudioMixer;
+  private audioMixer?: AudioMixer;
   private defaultFilename: string;
   private onStopRequest: () => Promise<RecordingResult>;
   private onPauseRequest: () => void;
@@ -37,6 +42,7 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
   constructor(options: SessionInitOptions) {
     super();
     this.id = options.id;
+    this.mode = options.mode || 'pixel';
     this.mimeType = options.mimeType;
     this.durationTracker = options.durationTracker;
     this.audioMixer = options.audioMixer;
@@ -88,38 +94,58 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
   }
 
   muteMic(): void {
-    this.audioMixer.setMicMuted(true);
-    this.emit('micMuteChange', true);
+    if (this.audioMixer) {
+      this.audioMixer.setMicMuted(true);
+      this.emit('micMuteChange', true);
+    }
   }
 
   unmuteMic(): void {
-    this.audioMixer.setMicMuted(false);
-    this.emit('micMuteChange', false);
+    if (this.audioMixer) {
+      this.audioMixer.setMicMuted(false);
+      this.emit('micMuteChange', false);
+    }
   }
 
   toggleMic(): boolean {
+    if (!this.audioMixer) return false;
     const isMuted = this.audioMixer.toggleMic();
     this.emit('micMuteChange', isMuted);
     return isMuted;
   }
 
   isMicMuted(): boolean {
-    return this.audioMixer.isMicMuted();
+    return this.audioMixer ? this.audioMixer.isMicMuted() : false;
   }
 
   /**
-   * Constructs a standard RecordingResult object from final chunks.
+   * Constructs a standard RecordingResult object from final chunks and optional DOM events.
    */
-  createResult(chunks: Blob[], discontinueReason: DiscontinueReason): RecordingResult {
+  createResult(chunks: Blob[], discontinueReason: DiscontinueReason, domEvents?: DomRecordingEvent[]): RecordingResult {
     const stats = this.durationTracker.getStats();
     const finalBlob = new Blob(chunks, { type: this.mimeType });
     const objectUrl = URL.createObjectURL(finalBlob);
-    const ext = getExtensionForMimeType(this.mimeType);
+    const ext = this.mode === 'dom' ? 'json' : getExtensionForMimeType(this.mimeType);
     const filename = `${this.defaultFilename}.${ext}`;
     const duration = Math.max(1, stats.elapsedSeconds);
 
+    const triggerDownload = (blobToDownload: Blob, name: string) => {
+      const url = URL.createObjectURL(blobToDownload);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        if (a.parentNode) a.parentNode.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    };
+
     const result: RecordingResult = {
       id: this.id,
+      mode: this.mode,
       blob: finalBlob,
       url: objectUrl,
       duration,
@@ -127,6 +153,7 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
       filename,
       size: finalBlob.size,
       discontinueReason,
+      domEvents,
       download: (customFilename?: string) => {
         const downloadName = customFilename || filename;
         const a = document.createElement('a');
@@ -141,8 +168,11 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
       },
       upload: async (endpointUrl: string, options: RequestInit = {}) => {
         const formData = new FormData();
+        // Append both 'recording' and 'video' for backward compatibility
+        formData.append('recording', finalBlob, filename);
         formData.append('video', finalBlob, filename);
         formData.append('id', this.id);
+        formData.append('mode', this.mode);
         formData.append('duration', duration.toString());
         formData.append('mimeType', this.mimeType);
         formData.append('discontinueReason', discontinueReason);
@@ -162,6 +192,25 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
         URL.revokeObjectURL(objectUrl);
       }
     };
+
+    if (this.mode === 'dom') {
+      result.downloadJson = (customFilename?: string) => {
+        const jsonName = customFilename || `${this.defaultFilename}.json`;
+        triggerDownload(finalBlob, jsonName);
+      };
+
+      result.downloadHtmlReplay = (customFilename?: string) => {
+        const htmlContent = generateStandalonePlayerHtml({
+          events: domEvents || [],
+          durationSeconds: duration,
+          sessionId: this.id,
+          title: `ShowAndTell Replay - ${this.defaultFilename}`
+        });
+        const htmlBlob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const htmlName = customFilename || `${this.defaultFilename}.html`;
+        triggerDownload(htmlBlob, htmlName);
+      };
+    }
 
     return result;
   }

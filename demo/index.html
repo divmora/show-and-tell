@@ -132,6 +132,14 @@
         </div>
 
         <div class="form-group">
+          <label for="recordingMode">Recording Mode</label>
+          <select id="recordingMode">
+            <option value="pixel" selected>Pixel-Level (Video / Screen Share - Default)</option>
+            <option value="dom">DOM-Level (In-App Session Replay - Zero Permission)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
           <label for="maxDuration">Maximum Recording Duration</label>
           <select id="maxDuration">
             <option value="10">10 Seconds (Quick Test Auto-Discontinue)</option>
@@ -149,13 +157,13 @@
         </div>
 
         <div class="form-group">
-          <label>Audio & UI Features</label>
+          <label>Audio, UI & Privacy Features</label>
           <div class="checkbox-group">
-            <label class="checkbox-label">
+            <label class="checkbox-label" id="micAudioLabel">
               <input type="checkbox" id="micAudio" checked />
               Record Microphone Voiceover (getUserMedia)
             </label>
-            <label class="checkbox-label">
+            <label class="checkbox-label" id="systemAudioLabel">
               <input type="checkbox" id="systemAudio" checked />
               Record Display / System Audio (getDisplayMedia)
             </label>
@@ -165,11 +173,15 @@
             </label>
             <label class="checkbox-label">
               <input type="checkbox" id="previewModal" checked />
-              Show Post-Recording Video Preview Modal
+              Show Post-Recording Video / Replay Preview Modal
             </label>
             <label class="checkbox-label">
               <input type="checkbox" id="storagePersistence" checked />
               Enable Local IndexedDB Reload Persistence
+            </label>
+            <label class="checkbox-label" id="domMaskLabel" style="display: none;">
+              <input type="checkbox" id="domMaskInputs" checked />
+              Mask Sensitive Form Inputs & Passwords (PII Protection)
             </label>
           </div>
         </div>
@@ -177,7 +189,7 @@
         <div class="actions">
           <button id="btnStart" class="btn-primary">
             <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
-            Start Screen Recording
+            <span id="btnStartText">Start Screen Recording</span>
           </button>
           <button id="btnStop" class="btn-danger" disabled>
             <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
@@ -194,6 +206,10 @@
         </div>
 
         <div class="status-panel">
+          <div class="status-row">
+            <span class="status-key">Recording Mode:</span>
+            <span class="status-val" id="statusMode" style="color: #60a5fa;">PIXEL (VIDEO)</span>
+          </div>
           <div class="status-row">
             <span class="status-key">Session State:</span>
             <span class="status-val" id="statusState">IDLE</span>
@@ -235,35 +251,102 @@
       </div>
     </div>
 
+    <!-- Interactive In-App Test Surface (Ideal for DOM Session Replay Testing) -->
+    <div class="card" id="dom-test-surface" style="margin-top: 20px;">
+      <div class="card-title">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+        Interactive Test Sandbox (Test Typing, Clicks & Masking in Replay)
+      </div>
+      <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 14px;">
+        Type in the inputs below and click buttons while recording with <strong>DOM-Level mode</strong> to verify that your clicks, cursor, input values, and sensitive masking are faithfully captured and replayed!
+      </p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
+        <div>
+          <label style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 4px;">Standard Text Input (Follows Toggle)</label>
+          <input type="text" id="testInputText" placeholder="Type test notes here..." style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.15); color: #fff;" />
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #f59e0b; display: block; margin-bottom: 4px;">Selective Mask (.sat-mask) - Always Masked</label>
+          <input type="text" id="testInputMasked" class="sat-mask" placeholder="Card / SSN (Always Masked)" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px dashed rgba(245,158,11,0.5); color: #fff;" />
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #34d399; display: block; margin-bottom: 4px;">Selective Unmask (.sat-unmask) - Always Visible</label>
+          <input type="text" id="testInputUnmasked" class="sat-unmask" placeholder="Public Search / Feedback" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px dashed rgba(52,211,153,0.5); color: #fff;" />
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #ef4444; display: block; margin-bottom: 4px;">Password (Auto-Masked for Security)</label>
+          <input type="password" id="testInputPassword" value="Secret123" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.15); color: #fff;" />
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #38bdf8; display: block; margin-bottom: 4px;">Aadhar Input (Selector: #aadharInput)</label>
+          <input type="text" id="aadharInput" placeholder="Aadhar: 1234 5678 9012" value="1234 5678 9012" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56,189,248,0.4); color: #fff;" />
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #a78bfa; display: block; margin-bottom: 4px;">PAN Card Input (Selector: .pan-input)</label>
+          <input type="text" class="pan-input" placeholder="PAN: ABCDE1234F" value="ABCDE1234F" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(167,139,250,0.4); color: #fff;" />
+        </div>
+        <div>
+          <label style="font-size: 12px; color: #94a3b8; display: block; margin-bottom: 4px;">Dropdown Selection</label>
+          <select id="testSelect" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.15); color: #fff;">
+            <option value="bug">🐞 Bug Report</option>
+            <option value="feature">✨ Feature Request</option>
+            <option value="question">❓ Question</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top: 14px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+        <button type="button" id="testCounterBtn" class="btn-outline" style="padding: 6px 14px;">
+          Clicked: <span id="testCounterVal">0</span> times
+        </button>
+        <span class="sat-mask" style="font-size: 12px; color: #f59e0b; padding: 4px 8px; border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 6px;">
+          Confidential PII Tag (.sat-mask): SSN 000-12-3456
+        </span>
+        <span id="aadharTextDisplay" style="font-size: 12px; color: #38bdf8; padding: 4px 8px; border: 1px dashed rgba(56, 189, 248, 0.4); border-radius: 6px;">
+          Aadhar Text (#aadharTextDisplay): 1234 5678 9012
+        </span>
+        <span class="pan-text-display" style="font-size: 12px; color: #a78bfa; padding: 4px 8px; border: 1px dashed rgba(167, 139, 250, 0.4); border-radius: 6px;">
+          PAN Text (.pan-text-display): ABCDE1234F
+        </span>
+      </div>
+    </div>
+
     <!-- Integration Code Sample -->
     <div class="card">
       <div class="card-title">
         <svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
         How to embed ShowAndTell in any website
       </div>
+      <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">
+        Include the single bundle (under 80 KB) and start recording with 1 line of JavaScript:
+      </p>
       <pre><code>&lt;!-- 1. Include the single standalone bundle (Zero backend required) --&gt;
 &lt;script src="show-and-tell.min.js"&gt;&lt;/script&gt;
 
 &lt;script&gt;
-  // 2. Start recording with 1 function call
-  const session = await ShowAndTell.startRecording({
-    maxDuration: 60, // Maximum 60 seconds (auto-discontinues after 1 min)
-    audio: { mic: true, system: true },
-    ui: true // Displays the draggable floating toolbar with timer
+  // A. Default Pixel-Level Screen & Audio Recording (WebM/MP4)
+  const pixelSession = await ShowAndTell.startRecording({
+    mode: 'pixel', // default
+    maxDuration: '2m',
+    audio: { mic: true, system: true }
   });
 
-  // Optional: Listen to duration updates & events
-  session.on('warning', ({ remainingSeconds }) =&gt; {
-    console.warn(`Recording will auto-stop in ${remainingSeconds}s!`);
+  // B. Zero-Permission DOM Session Replay with Scoped PII Masking
+  const domSession = await ShowAndTell.startRecording({
+    mode: 'dom',
+    dom: {
+      maskAllInputs: false, // leave normal inputs readable
+      // Multilevel scoped selectors target duplicate IDs or specific containers:
+      maskSelector: '#customerScope #kycForm, #aadharInput, .pan-input, #aadharDisplay',
+      unmaskSelector: '#searchBox, .public-field'
+    }
   });
 
-  // 3. Stop whenever ready (or it stops automatically at maxDuration)
-  const result = await session.stop();
-  
-  // 4. Download file or use Blob directly
-  result.download('my-presentation.webm');
-  console.log('Video Blob:', result.blob);
+  // Stop when ready and download:
+  // const result = await domSession.stop();
+  // result.downloadHtmlReplay('session-replay.html'); // self-contained offline player
+  // result.downloadJson('events.json');               // raw events stream
 &lt;/script&gt;</code></pre>
+    </div>
     <!-- Popular Use Cases Section (SEO & Solution Guide) -->
     <div class="card" id="use-cases" style="margin-top: 24px;">
       <div class="card-title">

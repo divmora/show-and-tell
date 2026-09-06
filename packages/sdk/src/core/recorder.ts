@@ -1,5 +1,6 @@
 import { 
   DiscontinueReason, 
+  DomRecordingEvent,
   RecordingResult, 
   RecordingSession, 
   ShowAndTellConfig 
@@ -11,10 +12,14 @@ import { storage } from '../storage/indexeddb';
 import { getPreferredMimeType } from '../utils/codecs';
 import { RecordingWidget } from '../ui/widget';
 import { PreviewModal } from '../ui/preview-modal';
+import { DomRecorder } from '../dom/recorder';
 
 export class RecorderEngine {
   private activeSession?: RecordingSessionImpl;
+  private activeConfig: ShowAndTellConfig = {};
   private mediaRecorder?: MediaRecorder;
+  private domRecorder?: DomRecorder;
+  private domEvents: DomRecordingEvent[] = [];
   private displayStream?: MediaStream;
   private micStream?: MediaStream;
   private combinedStream?: MediaStream;
@@ -40,23 +45,146 @@ export class RecorderEngine {
       throw new Error('A recording session is already active. Stop the current recording before starting a new one.');
     }
 
-    if (typeof window === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
-      throw new Error('Screen capture (getDisplayMedia) is not supported in this browser or environment.');
+    this.activeConfig = config;
+    const mode = config.mode || 'pixel';
+
+    if (mode === 'pixel') {
+      if (typeof window === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
+        throw new Error('Screen capture (getDisplayMedia) is not supported in this browser or environment.');
+      }
+    } else {
+      if (typeof window === 'undefined' || typeof document === 'undefined') {
+        throw new Error('DOM recording is only supported in browser environments with a DOM window and document.');
+      }
     }
 
     const sessionId = `sat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-    const mimeType = getPreferredMimeType();
+    const mimeType = mode === 'dom' ? 'application/json' : getPreferredMimeType();
     const timeslice = config.timeslice ?? 1000;
     const shouldPersist = config.storage !== false;
     const hasMicConfig = typeof config.audio === 'object' ? !!config.audio.mic : false;
     const hasSystemAudio = typeof config.audio === 'object' ? config.audio.system !== false : config.audio !== false;
 
-    // Reset chunks
+    // Reset state
     this.chunks = [];
+    this.domEvents = [];
     this.chunkIndex = 0;
     this.discontinueReason = 'user_stopped';
 
-    // 1. Request Display Stream (Screen Capture)
+    // ----------------------------------------------------
+    // DOM Recording Mode (Zero Browser Permission Prompt)
+    // ----------------------------------------------------
+    if (mode === 'dom') {
+      // Optional mic capture
+      if (hasMicConfig && navigator.mediaDevices?.getUserMedia) {
+        try {
+          this.micStream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+          });
+          this.audioMixer = new AudioMixer();
+          this.audioMixer.mix(undefined, this.micStream);
+        } catch (err) {
+          console.warn('[ShowAndTell] Microphone capture denied or unavailable for DOM session:', err);
+        }
+      }
+
+      // Initialize Duration Tracker
+      this.durationTracker = new DurationTracker({
+        maxDuration: config.maxDuration,
+        warningThreshold: config.warningThreshold
+      });
+
+      // Initialize DOM Recorder
+      this.domRecorder = new DomRecorder({
+        config: config.dom,
+        timeslice,
+        onChunk: async (chunkEvents) => {
+          const chunkJson = JSON.stringify(chunkEvents);
+          const chunkBlob = new Blob([chunkJson], { type: 'application/json' });
+          const index = this.chunkIndex++;
+          this.chunks.push(chunkBlob);
+          this.activeSession?.emit('chunk', chunkBlob, index);
+
+          if (shouldPersist) {
+            const stats = this.durationTracker?.getStats();
+            await storage.saveChunk(sessionId, index, chunkBlob, stats?.elapsedMs ?? 0);
+          }
+        }
+      });
+
+      // Initialize Session Controller
+      this.activeSession = new RecordingSessionImpl({
+        id: sessionId,
+        mode: 'dom',
+        mimeType: 'application/json',
+        durationTracker: this.durationTracker,
+        audioMixer: this.audioMixer,
+        filename: config.filename,
+        onStopRequest: () => this.stopInternal('user_stopped'),
+        onPauseRequest: () => {
+          this.domRecorder?.pause();
+        },
+        onResumeRequest: () => {
+          this.domRecorder?.resume();
+        }
+      });
+
+      // Save Session Metadata to IndexedDB for Reload Resilience
+      if (shouldPersist) {
+        await storage.createSession({
+          id: sessionId,
+          startTime: Date.now(),
+          mimeType: 'application/json',
+          mode: 'dom',
+          maxDurationMs: this.durationTracker.getStats().maxDurationMs,
+          elapsedMs: 0,
+          status: 'active',
+          filename: config.filename,
+          updatedAt: Date.now()
+        });
+
+        this.beforeUnloadHandler = () => {
+          if (this.domRecorder) {
+            const events = this.domRecorder.getEvents();
+            if (events.length > 0) {
+              const dump = new Blob([JSON.stringify(events)], { type: 'application/json' });
+              storage.saveChunk(sessionId, this.chunkIndex++, dump, this.durationTracker?.getStats().elapsedMs ?? 0);
+            }
+          }
+        };
+        window.addEventListener('beforeunload', this.beforeUnloadHandler);
+        window.addEventListener('pagehide', this.beforeUnloadHandler);
+      }
+
+      // Max duration timeout
+      this.durationTracker.on('timeout', () => {
+        if (this.isRecording()) {
+          this.stopInternal('max_duration_reached');
+        }
+      });
+
+      if (config.onProgress) {
+        this.durationTracker.on('tick', config.onProgress);
+      }
+
+      // Start DOM recording and timer
+      this.domRecorder.start();
+      this.durationTracker.start();
+      this.activeSession.state = 'recording';
+      this.activeSession.emit('start');
+
+      // Mount widget
+      if (config.ui !== false) {
+        this.widget = new RecordingWidget(this.activeSession, !!this.micStream);
+        this.widget.mount();
+      }
+
+      return this.activeSession;
+    }
+
+    // ----------------------------------------------------
+    // Pixel Recording Mode (getDisplayMedia Screen Capture)
+    // ----------------------------------------------------
     try {
       this.displayStream = await navigator.mediaDevices.getDisplayMedia({
         video: config.video ?? {
@@ -222,14 +350,20 @@ export class RecorderEngine {
       // Stop Duration Tracker
       this.durationTracker?.stop();
 
-      // Request any final data and stop MediaRecorder
-      if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      // If DOM recording mode:
+      if (this.domRecorder) {
+        this.domEvents = this.domRecorder.stop();
+        const fullJsonBlob = new Blob([JSON.stringify(this.domEvents)], { type: 'application/json' });
+        this.chunks = [fullJsonBlob];
+        this.finalizeRecording(this.activeConfig);
+      } else if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+        // Pixel mode: Request any final data and stop MediaRecorder
         try {
           this.mediaRecorder.requestData();
         } catch {}
         this.mediaRecorder.stop();
       } else {
-        this.finalizeRecording();
+        this.finalizeRecording(this.activeConfig);
       }
     });
   }
@@ -261,7 +395,7 @@ export class RecorderEngine {
     const session = this.activeSession;
     if (!session) return;
 
-    const result = session.createResult(this.chunks, this.discontinueReason);
+    const result = session.createResult(this.chunks, this.discontinueReason, this.domEvents);
 
     // Update IndexedDB state to completed
     if (config.storage !== false) {
@@ -284,6 +418,7 @@ export class RecorderEngine {
       this.stopResolver = undefined;
     }
 
+    this.domRecorder = undefined;
     this.activeSession = undefined;
   }
 }

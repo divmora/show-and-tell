@@ -2,14 +2,17 @@ import type {
   RecoverableSession,
   RecordingResult,
   RecordingSession,
-  ShowAndTellConfig
+  ShowAndTellConfig,
+  DomRecordingEvent
 } from './types';
 import { recorderEngine } from './core/recorder';
 import { storage } from './storage/indexeddb';
 import { RecoveryBanner } from './ui/recovery-banner';
 import { getExtensionForMimeType } from './utils/codecs';
+import { generateStandalonePlayerHtml } from './dom/standalone-player';
 
 export * from './types';
+export * from './dom';
 export { AudioMixer } from './core/audio-mixer';
 export { DurationTracker } from './core/duration-tracker';
 export { storage, StorageManager } from './storage/indexeddb';
@@ -77,13 +80,37 @@ export const ShowAndTell = {
           if (!assembled) {
             throw new Error(`Failed to assemble chunks for session ${session.id}`);
           }
-          const ext = getExtensionForMimeType(assembled.mimeType);
+          const isDom = session.mode === 'dom' || assembled.mimeType === 'application/json';
+          const ext = isDom ? 'json' : getExtensionForMimeType(assembled.mimeType);
           const filename = `${session.filename || 'recovered_recording'}_${session.id}.${ext}`;
           const objectUrl = URL.createObjectURL(assembled.blob);
           const duration = Math.max(1, Math.floor(session.elapsedMs / 1000));
 
-          return {
+          let domEvents: DomRecordingEvent[] | undefined;
+          if (isDom) {
+            try {
+              const text = await assembled.blob.text();
+              domEvents = JSON.parse(text);
+            } catch {}
+          }
+
+          const triggerDownload = (blobToDownload: Blob, name: string) => {
+            const url = URL.createObjectURL(blobToDownload);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = name;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+              if (a.parentNode) a.parentNode.removeChild(a);
+              URL.revokeObjectURL(url);
+            }, 100);
+          };
+
+          const recoveredResult: RecordingResult = {
             id: session.id,
+            mode: isDom ? 'dom' : 'pixel',
             blob: assembled.blob,
             url: objectUrl,
             duration,
@@ -91,6 +118,7 @@ export const ShowAndTell = {
             filename,
             size: assembled.blob.size,
             discontinueReason: 'reload_recovery',
+            domEvents,
             download: (customFilename?: string) => {
               const downloadName = customFilename || filename;
               const a = document.createElement('a');
@@ -105,8 +133,10 @@ export const ShowAndTell = {
             },
             upload: async (endpointUrl: string, options: RequestInit = {}) => {
               const formData = new FormData();
+              formData.append('recording', assembled.blob, filename);
               formData.append('video', assembled.blob, filename);
               formData.append('id', session.id);
+              formData.append('mode', isDom ? 'dom' : 'pixel');
               formData.append('duration', duration.toString());
               formData.append('mimeType', assembled.mimeType);
               formData.append('discontinueReason', 'reload_recovery');
@@ -122,6 +152,24 @@ export const ShowAndTell = {
               URL.revokeObjectURL(objectUrl);
             }
           };
+
+          if (isDom) {
+            recoveredResult.downloadJson = (customFilename?: string) => {
+              triggerDownload(assembled.blob, customFilename || `${session.filename || 'recovered_recording'}_${session.id}.json`);
+            };
+            recoveredResult.downloadHtmlReplay = (customFilename?: string) => {
+              const htmlContent = generateStandalonePlayerHtml({
+                events: domEvents || [],
+                durationSeconds: duration,
+                sessionId: session.id,
+                title: `ShowAndTell Recovered Replay - ${session.id}`
+              });
+              const htmlBlob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+              triggerDownload(htmlBlob, customFilename || `${session.filename || 'recovered_recording'}_${session.id}.html`);
+            };
+          }
+
+          return recoveredResult;
         },
         discard: async () => {
           await storage.deleteSession(session.id);

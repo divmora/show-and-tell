@@ -16,14 +16,17 @@
 ## ⚡ Key Features
 
 - **Zero Server Dependency**: Runs 100% in client browsers. Captures and generates video Blobs and downloads files directly without requiring a backend.
+- **Dual Recording Modes (`pixel` default & `dom` opt-in)**:
+  - **`pixel` (default)**: Captures full screens, windows, or tabs with system + microphone audio mixing via Web Audio API, exporting WebM/MP4 video files.
+  - **`dom` (zero-permission)**: Instant in-app session replay capturing DOM mutations, typing, clicks, and scrolling without browser permission dialogs. Export as offline interactive `.html` replays or JSON event logs.
+- **Fine-Grained PII & Selector Masking**: Target sensitive text and text-type inputs (Aadhar card, PAN card, tax IDs) using multi-level scoped CSS selectors (e.g. `#customerScope #kycForm`), class names, or parent container boundaries.
 - **Single Drop-in Bundle**: Embed `<script src="dist/show-and-tell.min.js"></script>` into any static HTML page, Single Page Application (SPA), or web application.
 - **Single Function Call**: Start recording instantly with `ShowAndTell.startRecording()`.
-- **Display & Audio Capture**: Captures full screens, application windows, or browser tabs and mixes microphone voiceover + display audio in real time using the Web Audio API.
 - **Website Owner Max Duration Limit**: Enforce maximum recording time (e.g. `maxDuration: 60` or `'2m'`) with visual countdown alerts and automatic discontinuation upon reaching the limit.
 - **Pause-Aware Time Tracking**: High-resolution precision timer (`performance.now()`) that pauses and resumes without penalizing user recording time.
-- **Browser Reload & Navigation Resilience**: Buffers 1-second video timeslices into `IndexedDB`. If the user refreshes or navigates away, the pre-reload recording can be recovered with 1 click.
+- **Browser Reload & Navigation Resilience**: Buffers 1-second timeslices into `IndexedDB`. If the user refreshes or navigates away, the pre-reload recording can be recovered with 1 click.
 - **Isolated Floating UI Widget**: Draggable on-screen recording toolbar embedded in Shadow DOM with inlined CSS (zero CSS collisions with Tailwind, Bootstrap, etc.).
-- **Post-Recording Preview Modal**: Built-in video player with instant download and optional upload endpoints.
+- **Post-Recording Preview Modal**: Built-in video player & DOM session replayer with scrubber, speed controls (0.5x, 1x, 2x), and instant export/upload.
 
 ---
 
@@ -111,15 +114,106 @@ result.download('presentation.webm');
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
+| `mode` | `'pixel' \| 'dom'` | `'pixel'` | Recording mode. `'pixel'` captures screen/window video blobs; `'dom'` captures in-app DOM mutations and user interactions with zero permission prompt. |
+| `dom` | `DomConfig` | `{ maskAllInputs: true }` | Detailed options for in-app DOM session replay (see table below). |
 | `maxDuration` | `number \| string` | `undefined` | Maximum recording duration in seconds (e.g. `120`) or string format (e.g. `'2m'`, `'30s'`). Auto-discontinues recording when reached. |
 | `warningThreshold` | `number` | `10` | Seconds before `maxDuration` to switch the UI timer to warning mode (amber/red pulse). |
 | `audio` | `boolean \| { mic?: boolean; system?: boolean }` | `{ mic: false, system: true }` | Audio capture configuration. Set `mic: true` to mix microphone commentary with system audio. |
 | `ui` | `boolean` | `true` | Show on-screen floating recording toolbar (timer, mic mute, pause, stop). |
-| `previewModal` | `boolean` | `true` | Automatically open video preview modal with download button after recording completes. |
+| `previewModal` | `boolean` | `true` | Automatically open video/replay preview modal with download button after recording completes. |
 | `timeslice` | `number` | `1000` | Chunk interval in ms for streaming slices into `IndexedDB`. |
 | `storage` | `boolean` | `true` | Enable client-side IndexedDB persistence for reload and crash recovery. |
 | `filename` | `string` | `'recording'` | Default base filename for the exported recording file. |
 | `uploadEndpoint` | `string` | `undefined` | Optional server URL to enable 1-click video upload in preview modal. |
+
+### DOM Recording Options (`DomConfig`)
+
+| Option | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `maskAllInputs` | `boolean` | `true` | When `true`, masks all input values with `••••••••`. When `false`, inputs capture clear text unless targeted. |
+| `maskAllText` | `boolean` | `false` | When `true`, masks all rendered text across the entire page (`***`), except whitelisted elements. |
+| `maskSelector` | `string` | `undefined` | CSS selector (supporting multilevel and scoped selectors) for elements, text, or inputs to mask. |
+| `unmaskSelector` | `string` | `undefined` | CSS selector for elements, text, or inputs to explicitly whitelist/unmask. |
+| `maskTextClass` | `string` | `'sat-mask'` | Class name to mask elements and text for PII protection. |
+| `unmaskClass` | `string` | `'sat-unmask'` | Class name to explicitly unmask elements when `maskAllInputs` or `maskAllText` is `true`. |
+| `blockClass` | `string` | `'sat-block'` | Class name for elements to completely exclude from the recording snapshot. |
+| `recordMouse` | `boolean` | `true` | Whether to track mouse cursor movements and clicks. |
+| `mouseThrottleMs`| `number` | `50` | Throttling interval for mouse movement events in milliseconds. |
+
+---
+
+## 🛡️ Privacy & PII Masking (DOM Mode)
+
+ShowAndTell provides robust, enterprise-grade privacy controls that require **zero changes to your application HTML**:
+
+### 1. Mask Certain Fields Only (e.g. Aadhar Card, PAN Card, Tax ID)
+Fields like Aadhar cards or PAN cards are standard `<input type="text">`. Target them directly via ID or class without affecting other inputs:
+
+```javascript
+const session = await ShowAndTell.startRecording({
+  mode: 'dom',
+  dom: {
+    maskAllInputs: false, // Normal inputs capture clear text
+    maskSelector: '#aadharInput, .pan-input, #aadharTextDisplay'
+  }
+});
+```
+
+### 2. Disambiguate Duplicate IDs with Multilevel Scoped Selectors
+If your application has duplicate IDs across different tabs, modals, or micro-frontends (e.g. two forms with `id="kycForm"`), use standard descendant CSS selectors without modifying the site's code:
+
+```javascript
+const session = await ShowAndTell.startRecording({
+  mode: 'dom',
+  dom: {
+    maskAllInputs: false,
+    // Only masks #kycForm when it resides inside #customerScope:
+    maskSelector: '#customerScope #kycForm'
+  }
+});
+```
+
+### 3. Container-Level Masking & Nested Whitelisting
+Targeting a parent container (`<form>`, `<div>`, `<section>`) automatically masks all nested inputs and text within it. You can carve out specific exceptions using `sat-unmask`:
+
+```html
+<form id="kycForm">
+  <!-- All nested inputs inherit masking ('••••••••') -->
+  <input type="text" name="aadhar" value="1234 5678 9012" />
+  <input type="text" name="pan" value="ABCDE1234F" />
+
+  <!-- Specific exception inside masked parent: captured in clear text -->
+  <input type="text" name="country" class="sat-unmask" value="India" />
+</form>
+```
+
+### 4. Maximum Privacy Mode (Mask All Text & Inputs)
+For banking or healthcare apps where all user data must be concealed by default, enable `maskAllText: true` and whitelist only safe navigation:
+
+```javascript
+const session = await ShowAndTell.startRecording({
+  mode: 'dom',
+  dom: {
+    maskAllInputs: true,
+    maskAllText: true,
+    unmaskSelector: '#siteHeader, .nav-bar, #searchBox'
+  }
+});
+```
+
+---
+
+## 🔍 Zoom & Large-Screen Replay (DOM Mode)
+
+Unlike traditional pixel recordings that can blur when scaled up on high-resolution displays (4K monitors, wide desktop screens), DOM session replays are rendered natively with HTML elements and CSS fonts at crisp native resolution.
+
+ShowAndTell includes rich video-player-like zoom and viewport controls:
+- **`🔍 Fit` (Default)**: Automatically scales the recorded application viewport proportionally to fit cleanly inside the player modal or container without cropping.
+- **`🔍 100%` (Actual Size)**: Renders the session at the exact 1:1 pixel dimensions of the recorded browser view.
+- **`🔍 150%` / `200%` (Zoomed In)**: Magnifies fine details (code snippets, complex tables, tiny form inputs, micro-interactions).
+- **Auto-Follow Virtual Cursor**: When zoomed in, the viewport smoothly auto-centers and pans to follow the user's recorded mouse movements and clicks in real time.
+- **Grab-to-Pan (Interactive Navigation)**: Click and drag anywhere on the player surface with a natural `grab` / `grabbing` hand cursor to inspect any part of the page.
+- **Modal Maximize (`⛶`) & Fullscreen Mode**: Expand the replay modal to 96vw × 94vh or take the player into true fullscreen with 1 click for detailed inspection.
 
 ---
 

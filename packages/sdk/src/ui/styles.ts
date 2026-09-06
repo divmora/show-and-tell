@@ -228,6 +228,40 @@ export const MODAL_STYLES = `
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
   animation: sat-scale-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1;
+  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), height 0.2s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.2s, max-height 0.2s;
+}
+
+.sat-modal-dialog.sat-modal-dialog-maximized {
+  width: 96vw;
+  max-width: 96vw;
+  height: 94vh;
+  max-height: 94vh;
+}
+
+.sat-modal-dialog.sat-modal-dialog-maximized .sat-modal-body {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.sat-modal-dialog.sat-modal-dialog-maximized .sat-video-container {
+  flex: 1;
+  height: 100%;
+  aspect-ratio: auto;
+  min-height: 0;
+}
+
+.sat-modal-dialog.sat-modal-dialog-maximized .sat-dom-player-wrapper {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
+}
+
+.sat-modal-dialog.sat-modal-dialog-maximized .sat-dom-player-container {
+  flex: 1;
+  height: 100%;
+  aspect-ratio: auto;
+  min-height: 0;
 }
 
 @keyframes sat-fade-in {
@@ -256,6 +290,30 @@ export const MODAL_STYLES = `
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.sat-modal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sat-maximize-btn {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.sat-maximize-btn:hover {
+  background: #f4f4f5;
+  color: #18181b;
 }
 
 .sat-close-btn {
@@ -298,6 +356,132 @@ export const MODAL_STYLES = `
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.sat-dom-player-wrapper {
+  width: 100%;
+  background: #09090b;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.sat-dom-player-container {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.sat-dom-player-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.sat-dom-player-container::-webkit-scrollbar-track {
+  background: #09090b;
+}
+
+.sat-dom-player-container::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+.sat-dom-player-container::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+.sat-dom-player-wrapper:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sat-dom-player-wrapper:fullscreen .sat-dom-player-container {
+  flex: 1;
+  height: calc(100vh - 46px);
+  aspect-ratio: auto;
+}
+
+.sat-dom-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: #111827;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sat-dom-btn {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.15s;
+}
+
+.sat-dom-btn:hover {
+  background: #1d4ed8;
+}
+
+.sat-dom-scrubber {
+  flex: 1;
+  accent-color: #3b82f6;
+  cursor: pointer;
+  height: 5px;
+}
+
+.sat-dom-time {
+  font-size: 11px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: #94a3b8;
+  min-width: 75px;
+  text-align: center;
+}
+
+.sat-dom-btn-secondary,
+.sat-dom-speed {
+  background: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background 0.15s, color 0.15s;
+  outline: none;
+}
+
+.sat-dom-btn-secondary:hover,
+.sat-dom-speed:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.sat-badge-mode {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  margin-left: 6px;
 }
 
 .sat-meta-grid {

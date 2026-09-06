@@ -44,19 +44,21 @@ app.use('/dist', express.static(path.resolve(__dirname, '../../sdk/dist')));
 // Serve Demo client
 app.use(express.static(path.resolve(__dirname, '../../../demo')));
 
-// Upload endpoint for receiving recordings
-app.post('/api/upload', upload.single('video'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, error: 'No video file provided' });
+// Upload endpoint for receiving recordings (pixel videos or DOM JSON/HTML replays)
+app.post('/api/upload', upload.any(), (req, res) => {
+  const file = (req.files && Array.isArray(req.files) && req.files.length > 0) ? req.files[0] : req.file;
+  if (!file) {
+    return res.status(400).json({ success: false, error: 'No recording file provided' });
   }
 
-  const { id, duration, mimeType, discontinueReason } = req.body;
+  const { id, duration, mimeType, discontinueReason, mode } = req.body;
 
   console.log(`[ShowAndTell Server] Received recording upload:`, {
-    filename: req.file.filename,
-    size: req.file.size,
+    filename: file.filename,
+    size: file.size,
     duration: `${duration}s`,
     mimeType,
+    mode: mode || 'pixel',
     discontinueReason,
     sessionId: id
   });
@@ -65,11 +67,12 @@ app.post('/api/upload', upload.single('video'), (req, res) => {
     success: true,
     message: 'Recording uploaded successfully',
     file: {
-      filename: req.file.filename,
-      size: req.file.size,
-      path: `/api/recordings/${req.file.filename}`,
+      filename: file.filename,
+      size: file.size,
+      path: `/api/recordings/${file.filename}`,
       duration,
       mimeType,
+      mode: mode || 'pixel',
       discontinueReason
     }
   });

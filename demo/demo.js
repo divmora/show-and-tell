@@ -7,18 +7,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const maxDurationSelect = document.getElementById('maxDuration');
   const warningThresholdInput = document.getElementById('warningThreshold');
+  const recordingModeSelect = document.getElementById('recordingMode');
   const micAudioCheckbox = document.getElementById('micAudio');
   const systemAudioCheckbox = document.getElementById('systemAudio');
+  const systemAudioLabel = document.getElementById('systemAudioLabel');
   const floatingUiCheckbox = document.getElementById('floatingUi');
   const previewModalCheckbox = document.getElementById('previewModal');
   const storagePersistenceCheckbox = document.getElementById('storagePersistence');
+  const domMaskInputs = document.getElementById('domMaskInputs');
+  const domMaskLabel = document.getElementById('domMaskLabel');
+  const btnStartText = document.getElementById('btnStartText');
 
+  const statusMode = document.getElementById('statusMode');
   const statusState = document.getElementById('statusState');
   const statusElapsed = document.getElementById('statusElapsed');
   const statusRemaining = document.getElementById('statusRemaining');
   const statusCodec = document.getElementById('statusCodec');
   const statusChunks = document.getElementById('statusChunks');
   const progressBar = document.getElementById('progressBar');
+
+  // Test sandbox interactive counter
+  const testCounterBtn = document.getElementById('testCounterBtn');
+  const testCounterVal = document.getElementById('testCounterVal');
+  let clickCount = 0;
+  testCounterBtn?.addEventListener('click', () => {
+    clickCount++;
+    if (testCounterVal) testCounterVal.textContent = clickCount.toString();
+  });
+
+  // Handle Mode Change
+  function updateModeUi() {
+    const isDom = recordingModeSelect.value === 'dom';
+    if (isDom) {
+      if (btnStartText) btnStartText.textContent = 'Start In-App DOM Recording (0-Permission)';
+      if (statusMode) {
+        statusMode.textContent = 'DOM (SESSION REPLAY)';
+        statusMode.style.color = '#10b981';
+      }
+      if (domMaskLabel) domMaskLabel.style.display = 'flex';
+      if (systemAudioLabel) systemAudioLabel.style.opacity = '0.5';
+      if (statusCodec) statusCodec.textContent = 'application/json';
+    } else {
+      if (btnStartText) btnStartText.textContent = 'Start Screen Recording';
+      if (statusMode) {
+        statusMode.textContent = 'PIXEL (VIDEO)';
+        statusMode.style.color = '#60a5fa';
+      }
+      if (domMaskLabel) domMaskLabel.style.display = 'none';
+      if (systemAudioLabel) systemAudioLabel.style.opacity = '1';
+      if (statusCodec) {
+        statusCodec.textContent = window.ShowAndTell?.getPreferredMimeType ? window.ShowAndTell.getPreferredMimeType() : 'Auto-negotiated';
+      }
+    }
+  }
+
+  recordingModeSelect?.addEventListener('change', updateModeUi);
+  updateModeUi();
 
   let activeSession = null;
   let chunkCounter = 0;
@@ -42,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   btnStart.addEventListener('click', async () => {
     try {
+      const mode = recordingModeSelect.value;
       const maxDurationVal = parseInt(maxDurationSelect.value, 10);
       const warningThresholdVal = parseInt(warningThresholdInput.value, 10) || 5;
 
@@ -51,11 +96,18 @@ document.addEventListener('DOMContentLoaded', () => {
       progressBar.classList.remove('warning');
 
       activeSession = await window.ShowAndTell.startRecording({
+        mode: mode,
+        dom: {
+          maskAllInputs: domMaskInputs ? domMaskInputs.checked : true,
+          maskTextClass: 'sat-mask',
+          unmaskClass: 'sat-unmask',
+          maskSelector: '#aadharInput, .pan-input, #aadharTextDisplay, .pan-text-display'
+        },
         maxDuration: maxDurationVal > 0 ? maxDurationVal : undefined,
         warningThreshold: warningThresholdVal,
         audio: {
           mic: micAudioCheckbox.checked,
-          system: systemAudioCheckbox.checked
+          system: mode === 'pixel' ? systemAudioCheckbox.checked : false
         },
         ui: floatingUiCheckbox.checked,
         previewModal: previewModalCheckbox.checked,
@@ -64,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       updateUiState('recording');
-      statusCodec.textContent = window.ShowAndTell.getPreferredMimeType ? window.ShowAndTell.getPreferredMimeType() : 'Active';
+      statusCodec.textContent = mode === 'dom' ? 'application/json' : (window.ShowAndTell.getPreferredMimeType ? window.ShowAndTell.getPreferredMimeType() : 'Active');
 
       activeSession.on('tick', (stats) => {
         statusElapsed.textContent = stats.formattedElapsed;

@@ -14,6 +14,57 @@ export type DiscontinueReason =
   | 'reload_recovery'
   | 'error';
 
+export type RecordingMode = 'pixel' | 'dom';
+
+export interface DomConfig {
+  /** Mask all form inputs and text areas (default: true) */
+  maskAllInputs?: boolean;
+  /** Mask all rendered text content on the page (default: false) */
+  maskAllText?: boolean;
+  /** Class name to mask text contents and inputs for PII protection (default: 'sat-mask') */
+  maskTextClass?: string;
+  /** Class name to explicitly allow/unmask inputs and text even when maskAll is true (default: 'sat-unmask') */
+  unmaskClass?: string;
+  /** Unified CSS selector to identify specific elements, text, or inputs to mask (e.g. '#aadhar, #pan, .govt-id, [name="aadhar"]') */
+  maskSelector?: string;
+  /** Unified CSS selector to identify specific elements, text, or inputs to NOT mask (e.g. '#search, .public-field') */
+  unmaskSelector?: string;
+  /** CSS selector specifically for inputs to mask (alias for maskSelector) */
+  maskInputSelector?: string;
+  /** CSS selector specifically for inputs to NOT mask (alias for unmaskSelector) */
+  unmaskInputSelector?: string;
+  /** CSS selector specifically for text elements to mask */
+  maskTextSelector?: string;
+  /** CSS selector specifically for text elements to NOT mask */
+  unmaskTextSelector?: string;
+  /** Class name for elements to exclude from recording (default: 'sat-block') */
+  blockClass?: string;
+  /** Track mouse cursor movements (default: true) */
+  recordMouse?: boolean;
+  /** Throttle interval for mouse movements in ms (default: 50) */
+  mouseThrottleMs?: number;
+}
+
+export interface SerializedNode {
+  id: number;
+  type: 'element' | 'text' | 'comment';
+  tagName?: string;
+  attributes?: Record<string, string>;
+  textContent?: string;
+  children?: SerializedNode[];
+  isInput?: boolean;
+  value?: string | boolean;
+}
+
+export type DomRecordingEvent = 
+  | { type: 'dom_snapshot'; timestamp: number; data: SerializedNode; viewport: { width: number; height: number; scrollX: number; scrollY: number } }
+  | { type: 'mutation'; timestamp: number; addedNodes?: { parentId: number; nextSiblingId?: number | null; node: SerializedNode }[]; removedNodeIds?: number[]; attributeChanges?: { nodeId: number; name: string; value: string | null }[]; textChanges?: { nodeId: number; value: string }[] }
+  | { type: 'mouse_move'; timestamp: number; x: number; y: number }
+  | { type: 'mouse_click'; timestamp: number; x: number; y: number; clickType: 'click' | 'mousedown' | 'mouseup' }
+  | { type: 'scroll'; timestamp: number; x: number; y: number; targetId?: number }
+  | { type: 'input'; timestamp: number; targetId: number; value: string | boolean; checked?: boolean }
+  | { type: 'resize'; timestamp: number; width: number; height: number };
+
 export interface AudioConfig {
   /** Capture microphone voiceover (default: false) */
   mic?: boolean;
@@ -22,6 +73,10 @@ export interface AudioConfig {
 }
 
 export interface ShowAndTellConfig {
+  /** Recording mode: 'pixel' (screen/display capture, default) or 'dom' (in-app session replay) */
+  mode?: RecordingMode;
+  /** DOM recording configuration (active when mode is 'dom') */
+  dom?: DomConfig;
   /** Maximum recording duration in seconds (e.g. 120) or string format (e.g. '2m', '30s', '1h'). Recording will automatically discontinue after this time. */
   maxDuration?: number | string;
   /** Threshold in seconds before maxDuration to trigger warning indicators (default: 10s). */
@@ -78,13 +133,15 @@ export interface DurationStats {
 export interface RecordingResult {
   /** Unique session ID */
   id: string;
-  /** Generated video Blob */
+  /** Recording mode used */
+  mode: RecordingMode;
+  /** Generated video or JSON Blob */
   blob: Blob;
-  /** Blob object URL for immediate playback in <video> elements */
+  /** Blob object URL for immediate playback in <video> elements or fetch */
   url: string;
   /** Final recording duration in seconds */
   duration: number;
-  /** MIME type (e.g. 'video/webm;codecs=vp9,opus') */
+  /** MIME type (e.g. 'video/webm;codecs=vp9,opus' or 'application/json') */
   mimeType: string;
   /** Generated filename with proper extension */
   filename: string;
@@ -92,9 +149,15 @@ export interface RecordingResult {
   size: number;
   /** The reason why recording was discontinued */
   discontinueReason: DiscontinueReason;
+  /** Recorded DOM events if mode was 'dom' */
+  domEvents?: DomRecordingEvent[];
   /** Helper to trigger browser file download */
   download: (customFilename?: string) => void;
-  /** Helper to upload video to a server endpoint */
+  /** Helper to download DOM replay as an offline self-contained HTML file (DOM mode) */
+  downloadHtmlReplay?: (customFilename?: string) => void;
+  /** Helper to download raw DOM event JSON (DOM mode) */
+  downloadJson?: (customFilename?: string) => void;
+  /** Helper to upload recording to a server endpoint */
   upload: (endpointUrl: string, options?: RequestInit) => Promise<Response>;
   /** Revoke Blob object URL to free memory */
   revoke: () => void;
@@ -143,6 +206,7 @@ export interface SessionMetadata {
   id: string;
   startTime: number;
   mimeType: string;
+  mode?: RecordingMode;
   maxDurationMs?: number;
   elapsedMs: number;
   status: 'active' | 'completed' | 'interrupted';
