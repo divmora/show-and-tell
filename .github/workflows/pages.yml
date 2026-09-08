@@ -20,5 +20,5 @@ jobs:
     with:
       artifact-path: './site'
       build-command: 'npm run build:pages'
-      node-version: '22'
+      node-version: '26'
       package-manager: 'npm'

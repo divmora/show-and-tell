@@ -13,7 +13,7 @@ All contributors and maintainers are expected to follow the [DIVMORA Code of Con
 ## Prerequisites
 
 Before setting up local development, make sure you have the following installed:
-- **Node.js**: `22.x` or later (LTS recommended)
+- **Node.js**: `26.x` or later (LTS recommended)
 - **npm**: `10.x` or later
 - **Make**: GNU Make (for running standard workflow targets)
 - **Docker**: (Optional) For containerized testing and deployments
