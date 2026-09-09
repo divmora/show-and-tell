@@ -1,6 +1,6 @@
 {
   "name": "show-and-tell-server",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "Companion Demo Server for ShowAndTell SDK",
   "main": "dist/index.js",

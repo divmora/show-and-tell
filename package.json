@@ -1,6 +1,6 @@
 {
   "name": "show-and-tell-monorepo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "ShowAndTell - Standalone JavaScript Screen Recording SDK and Demo",
   "workspaces": [
