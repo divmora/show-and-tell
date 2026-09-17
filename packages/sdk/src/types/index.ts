@@ -76,13 +76,43 @@ export interface AudioConfig {
   system?: boolean;
 }
 
+export interface NetworkSanitizeRule {
+  /** Additional header names to redact (case-insensitive) */
+  headers?: string[];
+  /** Additional JSON keys to redact recursively */
+  jsonKeys?: string[];
+  /** Additional query parameter keys to redact */
+  queryParams?: string[];
+}
+
+export interface NetworkDiagnosticsConfig {
+  /** Master toggle for network request tracking (default: true) */
+  enabled?: boolean;
+  /** Whether to capture request and response bodies for error requests (status >= 400) (default: true) */
+  captureErrorBodies?: boolean;
+  /** Whether to capture request and response bodies for successful requests (status < 400) (default: false) */
+  captureSuccessBodies?: boolean;
+  /** Master toggle to capture all bodies (success & error) (default: false) */
+  captureBodies?: boolean;
+  /** Maximum bytes to capture per body before truncation (default: 8192, 8 KB) */
+  maxBodySize?: number;
+  /** URL patterns or regexes to completely exclude from network capture */
+  ignoreUrls?: (string | RegExp)[];
+  /** Optional strict allow-list of domains to capture (e.g. ['api.myapp.com']) */
+  allowedDomains?: string[];
+  /** Custom redaction rules augmenting the built-in defaults */
+  sanitizeRules?: NetworkSanitizeRule;
+  /** Custom developer hook to inspect or mutate entry before it is saved (return null to drop) */
+  sanitize?: (entry: NetworkDiagnosticEntry) => NetworkDiagnosticEntry | null;
+}
+
 export interface DiagnosticsConfig {
   /** Master switch to enable/disable diagnostics collection (default: true) */
   enabled?: boolean;
   /** Capture console.error, console.warn, console.info (default: true) */
   console?: boolean;
   /** Track failed or all network requests via fetch and XMLHttpRequest (default: true) */
-  network?: boolean;
+  network?: boolean | NetworkDiagnosticsConfig;
   /** Capture uncaught window exceptions and unhandled promise rejections (default: true) */
   uncaughtErrors?: boolean;
   /** Maximum number of diagnostic entries to retain (default: 200) */
@@ -102,18 +132,45 @@ export interface DiagnosticEntry {
   method?: string;
   url?: string;
   status?: number;
+  statusText?: string;
   durationMs?: number;
+  requestHeaders?: Record<string, string>;
+  responseHeaders?: Record<string, string>;
+  requestBody?: any;
+  responseBody?: any;
+  initiatorType?: 'fetch' | 'xhr';
   details?: {
     method?: string;
     url?: string;
     status?: number;
+    statusText?: string;
     durationMs?: number;
+    requestHeaders?: Record<string, string>;
+    responseHeaders?: Record<string, string>;
+    requestBody?: any;
+    responseBody?: any;
+    initiatorType?: 'fetch' | 'xhr';
     stack?: string;
     filename?: string;
     lineno?: number;
     colno?: number;
     source?: string;
   };
+}
+
+export interface NetworkDiagnosticEntry extends DiagnosticEntry {
+  category: 'network';
+  method: string;
+  url: string;
+  status: number;
+  statusText?: string;
+  durationMs: number;
+  requestHeaders?: Record<string, string>;
+  responseHeaders?: Record<string, string>;
+  requestBody?: any;
+  responseBody?: any;
+  initiatorType?: 'fetch' | 'xhr';
+  isRedacted?: boolean;
 }
 
 export interface CameraConfig {

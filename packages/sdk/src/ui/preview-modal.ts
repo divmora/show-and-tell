@@ -1,5 +1,6 @@
 import { 
   DiagnosticEntry, 
+  NetworkDiagnosticEntry,
   RecordingResult, 
   UploadConfig, 
   PresignedUploadConfig, 
@@ -11,6 +12,7 @@ import { MODAL_STYLES } from './styles';
 import { DomReplayer } from '../dom/replayer';
 import { applyThemeToHost } from './theme';
 import { trimRecordingResult } from '../editor/trimmer';
+import { exportToHar } from '../diagnostics/sanitizer';
 
 function escapeHtml(str: string): string {
   return str
@@ -71,7 +73,7 @@ export class PreviewModal {
     const diagnostics: DiagnosticEntry[] = this.result.diagnostics || [];
     const errorCount = diagnostics.filter(e => e.level === 'error').length;
     const warnCount = diagnostics.filter(e => e.level === 'warn').length;
-    const netCount = diagnostics.filter(e => e.source === 'fetch' || e.source === 'xhr').length;
+    const netCount = diagnostics.filter(e => e.category === 'network' || e.source === 'fetch' || e.source === 'xhr').length;
     const hasIssues = errorCount > 0 || warnCount > 0;
     const totalDuration = (this.result.duration && Number.isFinite(this.result.duration) && this.result.duration > 0)
       ? this.result.duration
@@ -215,10 +217,12 @@ export class PreviewModal {
                 <button class="sat-diag-filter-btn" data-filter="error">Errors (${errorCount})</button>
                 <button class="sat-diag-filter-btn" data-filter="warn">Warnings (${warnCount})</button>
                 <button class="sat-diag-filter-btn" data-filter="net">Network (${netCount})</button>
+                ${netCount > 0 ? `<button class="sat-diag-action-btn" id="diagExportHarBtn" title="Export sanitized HTTP Archive (.har)" style="margin-left: 4px;">📥 Export HAR</button>` : ''}
               </div>
               <input type="text" class="sat-diag-search" id="diagSearchInput" placeholder="Filter logs...">
             </div>
             <div class="sat-diag-list" id="diagList"></div>
+            <div class="sat-net-inspector-container" id="netInspectorContainer" style="display: none;"></div>
           </div>
 
           <div class="sat-meta-grid">
@@ -329,7 +333,9 @@ export class PreviewModal {
       items?.forEach(item => {
         if ((item as HTMLElement).dataset.index === String(idx)) {
           item.classList.add('sat-diag-active');
-          item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          if (typeof item.scrollIntoView === 'function') {
+            item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          }
         } else {
           item.classList.remove('sat-diag-active');
         }
@@ -343,7 +349,7 @@ export class PreviewModal {
       const filtered = diagnostics.map((item, originalIndex) => ({ item, originalIndex })).filter(({ item }) => {
         if (currentFilter === 'error' && item.level !== 'error') return false;
         if (currentFilter === 'warn' && item.level !== 'warn') return false;
-        if (currentFilter === 'net' && item.source !== 'fetch' && item.source !== 'xhr') return false;
+        if (currentFilter === 'net' && item.category !== 'network' && item.source !== 'fetch' && item.source !== 'xhr') return false;
 
         if (currentSearch) {
           const q = currentSearch.toLowerCase();
@@ -367,28 +373,196 @@ export class PreviewModal {
 
         const timeStr = formatDuration(Math.floor(itemTime / 1000));
         const badgeClass = `sat-badge-${item.level}`;
-        const badgeText = item.source === 'fetch' || item.source === 'xhr'
-          ? `HTTP ${item.status || 'ERR'}`
-          : item.level.toUpperCase();
+        const isNet = item.category === 'network' || item.source === 'fetch' || item.source === 'xhr';
+        const method = item.method || 'GET';
+        const status = item.status || 0;
+        const statusClass = `sat-status-${Math.floor(status / 100)}xx`;
+        const durationStr = item.durationMs !== undefined ? `${item.durationMs}ms` : '';
 
-        const contentText = item.source === 'fetch' || item.source === 'xhr'
-          ? `${item.method || 'GET'} ${item.url} ${item.durationMs ? `(${item.durationMs}ms)` : ''}`
+        const contentText = isNet
+          ? `${method} ${item.url} ${durationStr ? `(${durationStr})` : ''}`
           : item.message;
 
-        row.innerHTML = `
-          <button class="sat-diag-time-btn" title="Seek to ${timeStr}">⏱ ${timeStr}</button>
-          <span class="sat-diag-badge ${badgeClass}">${badgeText}</span>
-          <span class="sat-diag-content" title="${escapeHtml(contentText)}">${escapeHtml(contentText)}</span>
-        `;
+        if (isNet) {
+          row.innerHTML = `
+            <button class="sat-diag-time-btn" title="Seek to ${timeStr}">⏱ ${timeStr}</button>
+            <span class="sat-diag-method-badge sat-method-${method.toLowerCase()}">${escapeHtml(method)}</span>
+            <span class="sat-net-status-pill ${statusClass}">${status || 'ERR'}</span>
+            <span class="sat-diag-content" title="${escapeHtml(item.url || contentText)}">${escapeHtml(item.url || contentText)}</span>
+            ${durationStr ? `<span style="font-size: 10px; color: #64748b; flex-shrink: 0;">${durationStr}</span>` : ''}
+            <span style="font-size: 10px; color: #3b82f6; flex-shrink: 0; opacity: 0.8;">Inspect ▾</span>
+          `;
+        } else {
+          row.innerHTML = `
+            <button class="sat-diag-time-btn" title="Seek to ${timeStr}">⏱ ${timeStr}</button>
+            <span class="sat-diag-badge ${badgeClass}">${item.level.toUpperCase()}</span>
+            <span class="sat-diag-content" title="${escapeHtml(contentText)}">${escapeHtml(contentText)}</span>
+          `;
+        }
 
         row.addEventListener('click', () => {
           seekTo(itemTime);
           highlightDiagItem(originalIndex);
+          if (isNet) {
+            renderNetworkInspector(item as NetworkDiagnosticEntry);
+          } else if (netInspectorContainer) {
+            netInspectorContainer.style.display = 'none';
+          }
         });
 
         diagList.appendChild(row);
       });
     };
+
+    const netInspectorContainer = this.shadowRoot.getElementById('netInspectorContainer');
+    let activeInspectorTab = 'headers';
+
+    const renderNetworkInspector = (entry: NetworkDiagnosticEntry) => {
+      if (!netInspectorContainer) return;
+      netInspectorContainer.style.display = 'block';
+
+      const method = entry.method || 'GET';
+      const status = entry.status || 0;
+      const statusText = entry.statusText || (status >= 400 ? 'Error' : 'OK');
+      const statusClass = `sat-status-${Math.floor(status / 100)}xx`;
+      const durationStr = entry.durationMs !== undefined ? `${entry.durationMs}ms` : '';
+
+      const renderTabBody = () => {
+        if (activeInspectorTab === 'headers') {
+          const reqHeaderEntries = Object.entries(entry.requestHeaders || {});
+          const resHeaderEntries = Object.entries(entry.responseHeaders || {});
+
+          let html = '<div style="margin-bottom: 6px;"><strong style="color: #94a3b8; font-size: 10px; text-transform: uppercase;">Request Headers</strong></div>';
+          if (reqHeaderEntries.length === 0) {
+            html += '<div style="color: #64748b; font-style: italic; margin-bottom: 8px;">No request headers recorded</div>';
+          } else {
+            html += '<table class="sat-net-headers-table">';
+            reqHeaderEntries.forEach(([k, v]) => {
+              const isRedacted = typeof v === 'string' && (v.includes('[REDACTED]') || v.includes('***'));
+              html += `<tr>
+                <td class="sat-net-header-key">${escapeHtml(k)}</td>
+                <td class="sat-net-header-val">${escapeHtml(String(v))} ${isRedacted ? '<span class="sat-redacted-pill">REDACTED</span>' : ''}</td>
+              </tr>`;
+            });
+            html += '</table>';
+          }
+
+          html += '<div style="margin: 10px 0 6px 0;"><strong style="color: #94a3b8; font-size: 10px; text-transform: uppercase;">Response Headers</strong></div>';
+          if (resHeaderEntries.length === 0) {
+            html += '<div style="color: #64748b; font-style: italic;">No response headers recorded (or restricted by CORS)</div>';
+          } else {
+            html += '<table class="sat-net-headers-table">';
+            resHeaderEntries.forEach(([k, v]) => {
+              const isRedacted = typeof v === 'string' && (v.includes('[REDACTED]') || v.includes('***'));
+              html += `<tr>
+                <td class="sat-net-header-key">${escapeHtml(k)}</td>
+                <td class="sat-net-header-val">${escapeHtml(String(v))} ${isRedacted ? '<span class="sat-redacted-pill">REDACTED</span>' : ''}</td>
+              </tr>`;
+            });
+            html += '</table>';
+          }
+          return html;
+        }
+
+        if (activeInspectorTab === 'payload') {
+          if (!entry.requestBody) {
+            return '<div style="color: #64748b; font-style: italic;">No request payload captured</div>';
+          }
+          const text = typeof entry.requestBody === 'object' ? JSON.stringify(entry.requestBody, null, 2) : String(entry.requestBody);
+          return escapeHtml(text);
+        }
+
+        if (activeInspectorTab === 'response') {
+          if (!entry.responseBody) {
+            return '<div style="color: #64748b; font-style: italic;">No response body captured (success responses omit bodies by default for security & performance)</div>';
+          }
+          const text = typeof entry.responseBody === 'object' ? JSON.stringify(entry.responseBody, null, 2) : String(entry.responseBody);
+          return escapeHtml(text);
+        }
+
+        return '';
+      };
+
+      netInspectorContainer.innerHTML = `
+        <div class="sat-net-inspector-header">
+          <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+            <span class="sat-diag-method-badge sat-method-${method.toLowerCase()}">${escapeHtml(method)}</span>
+            <span class="sat-net-status-pill ${statusClass}">${status || 'ERR'} ${escapeHtml(statusText)}</span>
+            <span style="color: #64748b; font-size: 10px;">${durationStr}</span>
+            <span style="color: #94a3b8; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(entry.url || '')}">${escapeHtml(entry.url || '')}</span>
+          </div>
+          <div style="display: flex; gap: 4px; align-items: center; flex-shrink: 0;">
+            <button class="sat-diag-action-btn" id="btnCopyCurl" title="Copy request as cURL">📋 cURL</button>
+            <button class="sat-diag-action-btn" id="btnCloseInspector" title="Close Network Details">✕</button>
+          </div>
+        </div>
+        <div class="sat-net-inspector-tabs">
+          <button class="sat-net-tab-btn ${activeInspectorTab === 'headers' ? 'active' : ''}" data-tab="headers">Headers</button>
+          <button class="sat-net-tab-btn ${activeInspectorTab === 'payload' ? 'active' : ''}" data-tab="payload">Payload</button>
+          <button class="sat-net-tab-btn ${activeInspectorTab === 'response' ? 'active' : ''}" data-tab="response">Response</button>
+          <span style="margin-left: auto; font-size: 9px; color: #10b981; display: flex; align-items: center; gap: 4px;">
+            🔒 Credentials Sanitized
+          </span>
+        </div>
+        <div class="sat-net-tab-content" id="netTabContent">${renderTabBody()}</div>
+      `;
+
+      // Wire Tab Buttons
+      const tabBtns = netInspectorContainer.querySelectorAll('.sat-net-tab-btn');
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          tabBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeInspectorTab = btn.getAttribute('data-tab') || 'headers';
+          const tabContent = netInspectorContainer.querySelector('#netTabContent');
+          if (tabContent) tabContent.innerHTML = renderTabBody();
+        });
+      });
+
+      // Wire Close button
+      netInspectorContainer.querySelector('#btnCloseInspector')?.addEventListener('click', () => {
+        netInspectorContainer.style.display = 'none';
+      });
+
+      // Wire Copy as cURL
+      netInspectorContainer.querySelector('#btnCopyCurl')?.addEventListener('click', async (e) => {
+        const btn = e.currentTarget as HTMLButtonElement;
+        let curl = `curl -X ${method} "${entry.url}"`;
+        if (entry.requestHeaders) {
+          for (const [k, v] of Object.entries(entry.requestHeaders)) {
+            curl += ` \\\n  -H "${k}: ${v}"`;
+          }
+        }
+        if (entry.requestBody) {
+          const bodyStr = typeof entry.requestBody === 'object' ? JSON.stringify(entry.requestBody) : String(entry.requestBody);
+          curl += ` \\\n  -d '${bodyStr.replace(/'/g, "'\\''")}'`;
+        }
+        try {
+          await navigator.clipboard.writeText(curl);
+          btn.textContent = '✓ Copied!';
+          setTimeout(() => { btn.textContent = '📋 cURL'; }, 2000);
+        } catch {
+          // fallback
+        }
+      });
+    };
+
+    // Wire Export HAR button
+    const diagExportHarBtn = this.shadowRoot.getElementById('diagExportHarBtn');
+    diagExportHarBtn?.addEventListener('click', () => {
+      const netEntries = diagnostics.filter((e): e is NetworkDiagnosticEntry => e.category === 'network' || e.source === 'fetch' || e.source === 'xhr');
+      const harObj = exportToHar(netEntries);
+      const harStr = JSON.stringify(harObj, null, 2);
+      const blob = new Blob([harStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `network-diagnostics-${Date.now()}.har`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
 
     renderDiagList();
 

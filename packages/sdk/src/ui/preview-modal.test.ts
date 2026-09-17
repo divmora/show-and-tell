@@ -216,4 +216,61 @@ describe('PreviewModal Subsystem & Theming', () => {
 
     modal.destroy();
   });
+
+  it('renders Network Inspector drawer with method badges, status pills, and Export HAR button', () => {
+    const mockNetResult: RecordingResult = {
+      blob: new Blob(['video-bits'], { type: 'video/webm' }),
+      url: 'blob:http://localhost/video-123',
+      duration: 10,
+      size: 1024,
+      mimeType: 'video/webm',
+      download: vi.fn(),
+      diagnostics: [
+        {
+          id: 'diag_net_1',
+          category: 'network',
+          level: 'error',
+          timestamp: 2500,
+          timestampMs: 2500,
+          message: 'POST /api/checkout (500 Error)',
+          method: 'POST',
+          url: 'https://api.example.com/checkout',
+          status: 500,
+          statusText: 'Internal Server Error',
+          durationMs: 120,
+          requestHeaders: { 'Content-Type': 'application/json', 'Authorization': 'Bearer [REDACTED]' },
+          responseHeaders: { 'Content-Type': 'application/json' },
+          requestBody: { orderId: '123' },
+          responseBody: { error: 'PaymentFailed' },
+          initiatorType: 'fetch'
+        }
+      ]
+    };
+
+    const modal = new PreviewModal(mockNetResult);
+    modal.mount();
+
+    const host = document.querySelector('show-and-tell-modal') as HTMLElement;
+    const shadow = host.shadowRoot!;
+
+    const exportHarBtn = shadow.querySelector('#diagExportHarBtn') as HTMLButtonElement;
+    expect(exportHarBtn).not.toBeNull();
+
+    const netRow = shadow.querySelector('.sat-diag-item') as HTMLElement;
+    expect(netRow).not.toBeNull();
+    expect(netRow.innerHTML).toContain('POST');
+    expect(netRow.innerHTML).toContain('500');
+
+    // Click network row to open inspector
+    netRow.click();
+
+    const inspector = shadow.querySelector('#netInspectorContainer') as HTMLElement;
+    expect(inspector.style.display).toBe('block');
+    expect(inspector.innerHTML).toContain('Authorization');
+    expect(inspector.innerHTML).toContain('REDACTED');
+    expect(inspector.innerHTML).toContain('cURL');
+
+    modal.destroy();
+  });
 });
+

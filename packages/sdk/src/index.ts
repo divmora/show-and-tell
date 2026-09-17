@@ -13,7 +13,9 @@ import type {
   StorageConfig,
   StoragePruneOptions,
   StoragePruneResult,
-  StorageStats
+  StorageStats,
+  DiagnosticEntry,
+  NetworkDiagnosticEntry
 } from './types';
 import { recorderEngine, RecorderEngine } from './core/recorder';
 import { storage } from './storage/indexeddb';
@@ -21,6 +23,7 @@ import { RecoveryBanner } from './ui/recovery-banner';
 import { getExtensionForMimeType } from './utils/codecs';
 import { generateStandalonePlayerHtml } from './dom/standalone-player';
 import { uploadRecordingAssets } from './utils/uploader';
+import { exportToHar } from './diagnostics/sanitizer';
 
 export * from './types';
 export * from './dom';
@@ -302,6 +305,16 @@ export const ShowAndTell = {
    */
   async getStorageStats(): Promise<StorageStats> {
     return storage.getStorageStats();
+  },
+
+  /**
+   * Generates an HTTP Archive (HAR 1.2) compliant object from diagnostic network entries.
+   * Useful for exporting network logs directly to Chrome DevTools or Postman.
+   */
+  exportHar(entries?: DiagnosticEntry[]): object {
+    const list: DiagnosticEntry[] = entries || recorderEngine.getDiagnostics();
+    const netEntries = list.filter((e: DiagnosticEntry): e is NetworkDiagnosticEntry => e.category === 'network');
+    return exportToHar(netEntries);
   },
 
   /**

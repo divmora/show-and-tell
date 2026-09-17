@@ -968,6 +968,10 @@ export class RecorderEngine {
     this.domRecorder = undefined;
     this.activeSession = undefined;
   }
+
+  getDiagnostics(): DiagnosticEntry[] {
+    return this.diagnosticsCollector?.getEntries() || [];
+  }
 }
 
 export const recorderEngine = new RecorderEngine();

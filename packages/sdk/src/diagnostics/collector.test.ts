@@ -81,4 +81,76 @@ describe('DiagnosticsCollector', () => {
     expect(limitedCollector.getEntries().length).toBe(3);
     limitedCollector.stop();
   });
+
+  it('captures sanitized request headers, response headers, and error bodies', async () => {
+    const errorPayload = JSON.stringify({
+      error: 'Unauthorized',
+      password: 'plain_password',
+      token: 'jwt_123',
+      message: 'Invalid credentials'
+    });
+
+    const mockResponse = new Response(errorPayload, {
+      status: 401,
+      statusText: 'Unauthorized',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Server-Id': 'app-node-1',
+        'Authorization': 'Bearer secret_jwt'
+      }
+    });
+
+    const origFetch = window.fetch;
+    window.fetch = vi.fn().mockResolvedValue(mockResponse);
+
+    collector.start(Date.now());
+    await window.fetch('http://localhost:3000/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer my_client_secret',
+        'Cookie': 'session=abc'
+      },
+      body: JSON.stringify({
+        username: 'user1',
+        password: 'mySecretPassword'
+      })
+    });
+
+    // Wait a tick for clone.text() to resolve
+    await new Promise(r => setTimeout(r, 20));
+
+    const netEntries = collector.getNetworkEntries();
+    expect(netEntries.length).toBe(1);
+    const entry = netEntries[0];
+
+    expect(entry.method).toBe('POST');
+    expect(entry.status).toBe(401);
+    expect(entry.statusText).toBe('Unauthorized');
+
+    // Request headers sanitized
+    expect(entry.requestHeaders?.['Authorization']).toBe('Bearer [REDACTED]');
+    expect(entry.requestHeaders?.['Cookie']).toBe('[REDACTED]');
+    expect(entry.requestHeaders?.['Content-Type']).toBe('application/json');
+
+    // Request body sanitized
+    expect(entry.requestBody?.username).toBe('user1');
+    expect(entry.requestBody?.password).toBe('********');
+
+    // Response body sanitized
+    expect(entry.responseBody?.error).toBe('Unauthorized');
+    expect(entry.responseBody?.password).toBe('********');
+    expect(entry.responseBody?.token).toBe('********');
+    expect(entry.responseBody?.message).toBe('Invalid credentials');
+
+    // HAR export generates valid format
+    const har: any = collector.exportHar();
+    expect(har.log.version).toBe('1.2');
+    expect(har.log.entries.length).toBe(1);
+    expect(har.log.entries[0].request.method).toBe('POST');
+    expect(har.log.entries[0].response.status).toBe(401);
+
+    collector.stop();
+    window.fetch = origFetch;
+  });
 });

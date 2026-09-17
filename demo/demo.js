@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnTriggerConsoleError = document.getElementById('btnTriggerConsoleError');
   const btnTriggerConsoleWarn = document.getElementById('btnTriggerConsoleWarn');
   const btnTriggerNetworkError = document.getElementById('btnTriggerNetworkError');
+  const btnTriggerAuthNetworkError = document.getElementById('btnTriggerAuthNetworkError');
   const btnTriggerUncaughtError = document.getElementById('btnTriggerUncaughtError');
   const diagSimLog = document.getElementById('diagSimLog');
 
@@ -90,8 +91,35 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   btnTriggerNetworkError?.addEventListener('click', () => {
-    fetch('/api/simulate-failure?status=500&error=DatabaseConnectionTimeout', { method: 'POST' }).catch(() => {});
-    if (diagSimLog) diagSimLog.textContent = `[${new Date().toLocaleTimeString()}] Dispatched failed POST fetch /api/simulate-failure (recorded in diagnostics)`;
+    fetch('/api/simulate-failure?status=500&token=secret_jwt_token_123', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Request-Id': 'req-987123'
+      },
+      body: JSON.stringify({
+        action: 'checkout',
+        cartId: 'cart_99',
+        creditCard: '4111-2222-3333-4444'
+      })
+    }).catch(() => {});
+    if (diagSimLog) diagSimLog.textContent = `[${new Date().toLocaleTimeString()}] Dispatched failed POST fetch with card payload (sanitized in diagnostics)`;
+  });
+
+  btnTriggerAuthNetworkError?.addEventListener('click', () => {
+    fetch('/api/auth/login?apiKey=sk_live_supersecretkey', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDcSemACt8x4iTMCda8Yhe3iZaWbvV5XKSTbuAn0M',
+        'Cookie': 'session_token=abc123secret'
+      },
+      body: JSON.stringify({
+        username: 'alice@example.com',
+        password: 'mySecretPassword99!'
+      })
+    }).catch(() => {});
+    if (diagSimLog) diagSimLog.textContent = `[${new Date().toLocaleTimeString()}] Dispatched 401 Auth fetch with passwords & tokens (all automatically redacted)`;
   });
 
   btnTriggerUncaughtError?.addEventListener('click', () => {
