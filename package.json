@@ -17,7 +17,7 @@
     "test:sdk": "npm run test --workspace=packages/sdk",
     "test:react": "npm run test --workspace=packages/react",
     "test": "npm run test:sdk && npm run test:react",
-    "lint": "tsc --noEmit --project packages/sdk/tsconfig.json && tsc --noEmit --project packages/server/tsconfig.json && tsc --noEmit --project packages/react/tsconfig.json",
+    "lint": "tsc --noEmit --project packages/sdk/tsconfig.json && npm run build:sdk && tsc --noEmit --project packages/server/tsconfig.json && tsc --noEmit --project packages/react/tsconfig.json",
     "fmt": "echo 'Formatting check passed'",
     "demo": "node packages/server/dist/index.js",
     "start": "npm run build && npm run build:server && npm run demo"
