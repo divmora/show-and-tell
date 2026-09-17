@@ -150,6 +150,7 @@ function CustomRecorder() {
 | `previewModal` | `boolean` | `true` | Automatically open video/replay preview modal with download button after recording completes. |
 | `timeslice` | `number` | `1000` | Chunk interval in ms for streaming slices into `IndexedDB`. |
 | `storage` | `boolean` | `true` | Enable client-side IndexedDB persistence for reload and crash recovery. |
+| `countdown` | `number \| boolean \| CountdownConfig` | `3` | Pre-recording countdown overlay (`3`, `2`, `1`, `Go!`) with audio tick chimes, "Start Now" skip button, and "Cancel" button. Set to `0` or `false` to disable. |
 | `cursorEffects` | `boolean \| CursorEffectsConfig` | `true` | Cursor interaction feedback (click ripple animations and toggleable cursor spotlight). |
 | `filename` | `string` | `'recording'` | Default base filename for the exported recording file. |
 | `uploadEndpoint` | `string` | `undefined` | Optional server URL to enable 1-click video upload in preview modal. |

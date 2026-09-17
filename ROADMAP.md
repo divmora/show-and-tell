@@ -13,11 +13,6 @@ This document serves as the **living product roadmap** for ShowAndTell.
   - Utilizes Web Audio `AnalyserNode` connected to `micSourceNode` to compute RMS volume.
   - Alert the user if the microphone is unmuted but audio level stays near zero for >5 seconds ("Silent Mic Warning").
 
-- [ ] **Pre-Recording 3-2-1 Countdown Overlay** ([#13](https://github.com/divmora/show-and-tell/issues/13))
-  - Configurable countdown timer (`countdown: 3`) after screen selection before recording actually starts.
-  - Smooth animated circular countdown numbers (`3`, `2`, `1`, `Go!`) with synthetic audio tick.
-  - Includes a "Start Immediately" skip button to jump straight into recording.
-
 - [ ] **Global Keyboard Shortcuts (Hotkeys)** ([#15](https://github.com/divmora/show-and-tell/issues/15))
   - Configurable hotkeys (e.g., `Alt+Shift+R` to Start/Stop, `Alt+Shift+P` to Pause/Resume, `Alt+Shift+C` to toggle camera bubble).
   - Allows seamless control during full-screen apps and presentations without touching the toolbar.

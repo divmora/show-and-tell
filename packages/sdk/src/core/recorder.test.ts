@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RecorderEngine } from './recorder';
+import { CountdownOverlay } from '../ui/countdown';
 
 describe('RecorderEngine Capabilities & Mobile Fallback', () => {
   const originalMediaDevices = navigator.mediaDevices;
@@ -123,4 +124,83 @@ describe('RecorderEngine Capabilities & Mobile Fallback', () => {
       expect(result.mode).toBe('dom');
     });
   });
+
+  describe('Countdown Integration', () => {
+    it('aborts recording if user cancels during countdown', async () => {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          getUserMedia: vi.fn(),
+          getDisplayMedia: undefined
+        },
+        configurable: true,
+        writable: true
+      });
+
+      const showSpy = vi.spyOn(CountdownOverlay, 'show').mockResolvedValue(false);
+
+      const engine = new RecorderEngine();
+      await expect(
+        engine.startRecording({
+          mode: 'dom',
+          ui: true,
+          countdown: 3
+        })
+      ).rejects.toThrow('Recording cancelled by user during countdown');
+
+      expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ seconds: 3 }));
+      showSpy.mockRestore();
+    });
+
+    it('proceeds with recording when countdown finishes or skip is clicked', async () => {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          getUserMedia: vi.fn(),
+          getDisplayMedia: undefined
+        },
+        configurable: true,
+        writable: true
+      });
+
+      const showSpy = vi.spyOn(CountdownOverlay, 'show').mockResolvedValue(true);
+
+      const engine = new RecorderEngine();
+      const session = await engine.startRecording({
+        mode: 'dom',
+        ui: true,
+        countdown: 3
+      });
+
+      expect(showSpy).toHaveBeenCalledWith(expect.objectContaining({ seconds: 3 }));
+      expect(session).toBeDefined();
+      expect(session.state).toBe('recording');
+
+      await session.stop();
+      showSpy.mockRestore();
+    });
+
+    it('bypasses countdown when countdown: 0 or countdown: false or ui: false', async () => {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          getUserMedia: vi.fn(),
+          getDisplayMedia: undefined
+        },
+        configurable: true,
+        writable: true
+      });
+
+      const showSpy = vi.spyOn(CountdownOverlay, 'show');
+
+      const engine = new RecorderEngine();
+      const session = await engine.startRecording({
+        mode: 'dom',
+        ui: true,
+        countdown: 0
+      });
+
+      expect(showSpy).not.toHaveBeenCalled();
+      await session.stop();
+      showSpy.mockRestore();
+    });
+  });
 });
+

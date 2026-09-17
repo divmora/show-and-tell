@@ -21,6 +21,7 @@ import { CameraBubble } from '../camera/bubble';
 import { VideoCompositor } from '../camera/compositor';
 import { PipController } from '../ui/pip-controller';
 import { CursorEffectsManager } from '../ui/cursor-effects';
+import { CountdownOverlay } from '../ui/countdown';
 import { formatDuration } from '../utils/time';
 
 export class RecorderEngine {
@@ -306,6 +307,13 @@ export class RecorderEngine {
 
       this.setupMediaSession();
 
+      // Pre-recording countdown overlay
+      const proceed = await this.runCountdown(config);
+      if (!proceed) {
+        this.cleanup(sessionId);
+        throw new Error('Recording cancelled by user during countdown');
+      }
+
       // Start DOM recording and timer
       this.domRecorder.start();
       this.durationTracker.start();
@@ -547,13 +555,20 @@ export class RecorderEngine {
       this.activeSession?.emit('error', err);
     };
 
-    // 11. Start MediaRecorder and Duration Clock
+    // 11. Pre-recording countdown overlay
+    const proceed = await this.runCountdown(config);
+    if (!proceed) {
+      this.cleanup(sessionId);
+      throw new Error('Recording cancelled by user during countdown');
+    }
+
+    // 12. Start MediaRecorder and Duration Clock
     this.mediaRecorder.start(timeslice);
     this.durationTracker.start();
     this.activeSession.state = 'recording';
     this.activeSession.emit('start');
 
-    // 12. Mount cursor effects (click ripple and spotlight)
+    // 13. Mount cursor effects (click ripple and spotlight)
     if (config.cursorEffects !== false) {
       const cursorConfig = typeof config.cursorEffects === 'object' ? config.cursorEffects : {};
       this.cursorEffects = new CursorEffectsManager(this.activeSession, {
@@ -622,6 +637,104 @@ export class RecorderEngine {
       // Hide in-page widget & camera bubble to prevent duplicate UI
       this.widget?.hide();
       this.cameraBubble?.hide();
+    }
+  }
+
+  private async runCountdown(config: ShowAndTellConfig): Promise<boolean> {
+    // Skip if UI is disabled (headless) or if countdown is explicitly 0 or false
+    if (config.ui === false || config.countdown === false || config.countdown === 0) {
+      return true;
+    }
+
+    let seconds = 3;
+    let audio = true;
+    let label = 'Recording starts in...';
+
+    if (typeof config.countdown === 'number') {
+      seconds = config.countdown;
+    } else if (typeof config.countdown === 'object') {
+      seconds = config.countdown.seconds ?? 3;
+      audio = config.countdown.audio !== false;
+      label = config.countdown.label || label;
+    }
+
+    if (seconds <= 0) return true;
+
+    return CountdownOverlay.show({
+      seconds,
+      audio,
+      label
+    });
+  }
+
+  private cleanup(sessionId?: string): void {
+    if (this.beforeUnloadHandler) {
+      window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+      window.removeEventListener('pagehide', this.beforeUnloadHandler);
+      this.beforeUnloadHandler = undefined;
+    }
+
+    if (this.diagnosticsCollector) {
+      this.diagnosticsCollector.stop();
+      this.diagnosticsCollector = undefined;
+    }
+
+    if (this.widget) {
+      this.widget.destroy();
+      this.widget = undefined;
+    }
+
+    if (this.cursorEffects) {
+      this.cursorEffects.destroy();
+      this.cursorEffects = undefined;
+    }
+
+    if (this.pipController) {
+      this.pipController.close();
+      this.pipController = undefined;
+    }
+
+    this.restoreDocumentTitle();
+    this.clearMediaSession();
+
+    if (this.cameraBubble) {
+      this.cameraBubble.destroy();
+      this.cameraBubble = undefined;
+    }
+    if (this.videoCompositor) {
+      this.videoCompositor.destroy();
+      this.videoCompositor = undefined;
+    }
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach((track) => track.stop());
+      this.cameraStream = undefined;
+    }
+    this.cameraMediaRecorder = undefined;
+    this.cameraChunks = [];
+
+    this.combinedStream?.getTracks().forEach((track) => track.stop());
+    this.displayStream?.getTracks().forEach((track) => track.stop());
+    this.micStream?.getTracks().forEach((track) => track.stop());
+
+    this.combinedStream = undefined;
+    this.displayStream = undefined;
+    this.micStream = undefined;
+
+    this.audioMixer?.destroy();
+    this.audioMixer = undefined;
+
+    this.domRecorder = undefined;
+    this.mediaRecorder = undefined;
+    this.chunks = [];
+    this.domEvents = [];
+
+    if (sessionId) {
+      storage.deleteSession(sessionId).catch(() => {});
+    }
+
+    if (this.activeSession) {
+      this.activeSession.state = 'stopped';
+      this.activeSession = undefined;
     }
   }
 

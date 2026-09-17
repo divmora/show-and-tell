@@ -154,6 +154,15 @@ export interface CursorEffectsConfig {
   spotlightRing?: boolean;
 }
 
+export interface CountdownConfig {
+  /** Duration in seconds for pre-recording countdown (default: 3) */
+  seconds?: number;
+  /** Whether to play synthetic Web Audio tick beeps on each second (default: true) */
+  audio?: boolean;
+  /** Custom label displayed above countdown number (default: 'Recording starts in...') */
+  label?: string;
+}
+
 export interface ShowAndTellConfig {
   /** Recording mode: 'pixel' (screen capture, default), 'dom' (in-app session replay), or 'auto' (automatic detection based on device capabilities) */
   mode?: RequestedRecordingMode;
@@ -163,6 +172,8 @@ export interface ShowAndTellConfig {
   dom?: DomConfig;
   /** Developer diagnostics & breadcrumb tracking (default: true) */
   diagnostics?: boolean | DiagnosticsConfig;
+  /** Pre-recording 3-2-1 countdown timer before capture starts (default: 3 when UI enabled, 0 when headless or disabled) */
+  countdown?: number | boolean | CountdownConfig;
   /** Picture-in-picture webcam facecam overlay (pixel mode) */
   camera?: boolean | CameraConfig;
   /** Always-on-top Document Picture-in-Picture floating window across all windows, applications, and tabs */
