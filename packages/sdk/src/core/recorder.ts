@@ -705,7 +705,7 @@ export class RecorderEngine {
 
     // Mount Preview Modal if enabled
     if (config.previewModal !== false) {
-      const modal = new PreviewModal(result, config.uploadEndpoint);
+      const modal = new PreviewModal(result, config.upload || config.uploadEndpoint);
       modal.mount();
     }
 

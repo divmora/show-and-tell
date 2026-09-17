@@ -3,13 +3,17 @@ import type {
   RecordingResult,
   RecordingSession,
   ShowAndTellConfig,
-  DomRecordingEvent
+  DomRecordingEvent,
+  PresignedUploadConfig,
+  PresignedUploadContext,
+  PresignedUploadResult
 } from './types';
 import { recorderEngine } from './core/recorder';
 import { storage } from './storage/indexeddb';
 import { RecoveryBanner } from './ui/recovery-banner';
 import { getExtensionForMimeType } from './utils/codecs';
 import { generateStandalonePlayerHtml } from './dom/standalone-player';
+import { uploadRecordingAssets } from './utils/uploader';
 
 export * from './types';
 export * from './dom';
@@ -21,6 +25,7 @@ export { storage, StorageManager } from './storage/indexeddb';
 export { formatDuration, formatBytes, parseDurationToMs } from './utils/time';
 export { getPreferredMimeType, getExtensionForMimeType } from './utils/codecs';
 export { PipController } from './ui/pip-controller';
+export { uploadRecordingAssets, uploadBlobToPresignedTarget } from './utils/uploader';
 
 /**
  * Main ShowAndTell SDK object.
@@ -150,6 +155,25 @@ export const ShowAndTell = {
                 ...options
               });
               return res;
+            },
+            uploadPresigned: async (config: PresignedUploadConfig): Promise<PresignedUploadResult> => {
+              const primaryContext: PresignedUploadContext = {
+                id: session.id,
+                filename,
+                mimeType: assembled.mimeType,
+                size: assembled.blob.size,
+                duration,
+                mode: isDom ? 'dom' : 'pixel',
+                fileType: 'recording'
+              };
+
+              const results = await uploadRecordingAssets({
+                primaryBlob: assembled.blob,
+                primaryContext,
+                config
+              });
+
+              return results[0];
             },
             revoke: () => {
               URL.revokeObjectURL(objectUrl);

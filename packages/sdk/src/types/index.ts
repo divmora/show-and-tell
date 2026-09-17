@@ -161,11 +161,91 @@ export interface ShowAndTellConfig {
   filename?: string;
   /** Reload recovery behavior: 'banner' (default), 'auto-download', 'custom', or 'none' */
   onReloadRecovery?: 'banner' | 'auto-download' | 'custom' | 'none';
-  /** Optional custom upload endpoint */
+  /** Optional custom upload endpoint (backward-compatible) */
   uploadEndpoint?: string;
+  /** Unified upload configuration (presigned cloud or server endpoint) */
+  upload?: UploadConfig;
   /** Optional callback fired on progress updates */
   onProgress?: (stats: DurationStats) => void;
 }
+
+export interface PresignedUrlTarget {
+  /** Signed upload URL */
+  url: string;
+  /** HTTP method (default: 'PUT') */
+  method?: 'PUT' | 'POST';
+  /** Optional custom headers (e.g. Content-Type, x-amz-acl, Authorization) */
+  headers?: Record<string, string>;
+  /** Optional form fields for S3 presigned POST policy uploads */
+  fields?: Record<string, string>;
+  /** Optional publicly accessible URL or key for sharing once uploaded */
+  publicUrl?: string;
+}
+
+export interface PresignedUploadContext {
+  /** Recording session ID */
+  id: string;
+  /** Output filename (e.g. 'recording_123.webm') */
+  filename: string;
+  /** File MIME type */
+  mimeType: string;
+  /** Total payload size in bytes */
+  size: number;
+  /** Recording duration in seconds */
+  duration: number;
+  /** Recording capture mode */
+  mode: RecordingMode;
+  /** Role of the file being uploaded */
+  fileType: 'recording' | 'camera' | 'diagnostics';
+}
+
+export interface UploadProgress {
+  /** Bytes loaded so far */
+  loaded: number;
+  /** Total bytes to upload */
+  total: number;
+  /** Upload completion percentage from 0 to 100 */
+  percent: number;
+  /** Role of the file being uploaded */
+  fileType: 'recording' | 'camera' | 'diagnostics';
+}
+
+export interface PresignedUploadResult {
+  /** Target upload details returned by getPresignedUrl */
+  target: PresignedUrlTarget;
+  /** HTTP response status code (e.g. 200, 204) */
+  status: number;
+  /** Response headers from the object store */
+  headers: Record<string, string>;
+  /** Public URL if provided by getPresignedUrl or server response */
+  publicUrl?: string;
+  /** Role of the file that was uploaded */
+  fileType: 'recording' | 'camera' | 'diagnostics';
+}
+
+export interface PresignedUploadConfig {
+  /** Function to fetch presigned upload parameters from the host backend */
+  getPresignedUrl: (context: PresignedUploadContext) => Promise<PresignedUrlTarget>;
+  /** Optional progress callback */
+  onProgress?: (progress: UploadProgress) => void;
+  /** Optional completion callback */
+  onSuccess?: (result: PresignedUploadResult) => void;
+  /** Optional error callback */
+  onError?: (error: Error) => void;
+}
+
+export interface ServerUploadConfig {
+  /** Server upload endpoint URL */
+  endpoint: string;
+  /** Fetch request options */
+  options?: RequestInit;
+  /** Optional completion callback */
+  onSuccess?: (response: Response) => void;
+  /** Optional error callback */
+  onError?: (error: Error) => void;
+}
+
+export type UploadConfig = PresignedUploadConfig | ServerUploadConfig;
 
 export interface DurationStats {
   /** Total elapsed active recording time in milliseconds (excludes pause time) */
@@ -229,6 +309,8 @@ export interface RecordingResult {
   downloadJson?: (customFilename?: string) => void;
   /** Helper to upload recording to a server endpoint */
   upload: (endpointUrl: string, options?: RequestInit) => Promise<Response>;
+  /** Helper to upload recording directly to S3 / Cloudflare R2 / Supabase presigned URL with progress */
+  uploadPresigned: (config: PresignedUploadConfig) => Promise<PresignedUploadResult>;
   /** Revoke Blob object URL to free memory */
   revoke: () => void;
 }

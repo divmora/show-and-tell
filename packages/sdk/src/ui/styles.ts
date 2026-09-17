@@ -854,10 +854,94 @@ export const MODAL_STYLES = `
   padding: 14px 20px;
   border-top: 1px solid #f4f4f5;
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fafafa;
+}
+
+.sat-modal-footer-actions {
+  display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
-  background: #fafafa;
+  width: 100%;
+}
+
+.sat-upload-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  animation: sat-fade-in 0.2s ease-out;
+}
+
+.sat-upload-status-text {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 500;
+  color: #334155;
+}
+
+.sat-upload-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #cbd5e1;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.sat-upload-progress-fill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 3px;
+  width: 0%;
+  transition: width 0.15s ease-out, background-color 0.2s ease;
+}
+
+.sat-upload-progress-fill.is-complete {
+  background: #10b981;
+}
+
+.sat-upload-feedback {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sat-upload-error-msg {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.sat-upload-success-link {
+  color: #2563eb;
+  text-decoration: underline;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sat-upload-copy-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 10px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.sat-upload-copy-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
 }
 
 .sat-action-btn {

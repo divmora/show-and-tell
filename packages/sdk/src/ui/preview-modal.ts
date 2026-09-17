@@ -1,4 +1,10 @@
-import { DiagnosticEntry, RecordingResult } from '../types';
+import { 
+  DiagnosticEntry, 
+  RecordingResult, 
+  UploadConfig, 
+  PresignedUploadConfig, 
+  ServerUploadConfig 
+} from '../types';
 import { formatBytes, formatDuration } from '../utils/time';
 import { MODAL_STYLES } from './styles';
 import { DomReplayer } from '../dom/replayer';
@@ -16,8 +22,19 @@ export class PreviewModal {
   private shadowRoot?: ShadowRoot;
   private domReplayer?: DomReplayer;
   private onFsChange?: () => void;
+  private uploadConfig?: string | UploadConfig;
 
-  constructor(private result: RecordingResult, private uploadEndpoint?: string) {}
+  constructor(private result: RecordingResult, uploadTarget?: string | UploadConfig) {
+    this.uploadConfig = uploadTarget;
+  }
+
+  private get hasUpload(): boolean {
+    return !!this.uploadConfig;
+  }
+
+  private get isPresigned(): boolean {
+    return !!(this.uploadConfig && typeof this.uploadConfig === 'object' && 'getPresignedUrl' in this.uploadConfig);
+  }
 
   mount(): void {
     if (typeof document === 'undefined') return;
@@ -130,25 +147,37 @@ export class PreviewModal {
           </div>
         </div>
         <div class="sat-modal-footer">
-          <button class="sat-action-btn sat-action-btn-secondary sat-btn-dismiss">
-            Close
-          </button>
-          ${isDom ? `
-            <button class="sat-action-btn sat-action-btn-secondary sat-btn-json">
-              <svg style="width: 14px; height: 14px; fill: currentColor;" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-              Download JSON
+          <div class="sat-upload-progress-container" style="display: none;">
+            <div class="sat-upload-status-text">
+              <span class="sat-upload-status-label">Uploading...</span>
+              <span class="sat-upload-percent-label">0%</span>
+            </div>
+            <div class="sat-upload-progress-track">
+              <div class="sat-upload-progress-fill"></div>
+            </div>
+            <div class="sat-upload-feedback"></div>
+          </div>
+          <div class="sat-modal-footer-actions">
+            <button class="sat-action-btn sat-action-btn-secondary sat-btn-dismiss">
+              Close
             </button>
-          ` : ''}
-          ${this.uploadEndpoint ? `
-            <button class="sat-action-btn sat-action-btn-secondary sat-btn-upload">
-              <svg style="width: 15px; height: 15px; fill: currentColor;" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
-              Upload to Server
+            ${isDom ? `
+              <button class="sat-action-btn sat-action-btn-secondary sat-btn-json">
+                <svg style="width: 14px; height: 14px; fill: currentColor;" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                Download JSON
+              </button>
+            ` : ''}
+            ${this.hasUpload ? `
+              <button class="sat-action-btn sat-action-btn-secondary sat-btn-upload">
+                <svg class="sat-upload-icon" style="width: 15px; height: 15px; fill: currentColor;" viewBox="0 0 24 24"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                <span class="sat-upload-btn-label">${this.isPresigned ? 'Upload to Cloud' : 'Upload to Server'}</span>
+              </button>
+            ` : ''}
+            <button class="sat-action-btn sat-action-btn-primary sat-btn-download">
+              <svg style="width: 15px; height: 15px; fill: currentColor;" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+              ${isDom ? 'Download Replay (.html)' : 'Download Video'}
             </button>
-          ` : ''}
-          <button class="sat-action-btn sat-action-btn-primary sat-btn-download">
-            <svg style="width: 15px; height: 15px; fill: currentColor;" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-            ${isDom ? 'Download Replay (.html)' : 'Download Video'}
-          </button>
+          </div>
         </div>
       </div>
     `;
@@ -540,16 +569,105 @@ export class PreviewModal {
       }
     });
 
-    if (uploadBtn && this.uploadEndpoint) {
+    if (uploadBtn && this.hasUpload) {
+      const uploadContainer = this.shadowRoot.querySelector('.sat-upload-progress-container') as HTMLElement | null;
+      const statusLabel = this.shadowRoot.querySelector('.sat-upload-status-label') as HTMLElement | null;
+      const percentLabel = this.shadowRoot.querySelector('.sat-upload-percent-label') as HTMLElement | null;
+      const progressFill = this.shadowRoot.querySelector('.sat-upload-progress-fill') as HTMLElement | null;
+      const feedbackEl = this.shadowRoot.querySelector('.sat-upload-feedback') as HTMLElement | null;
+      const btnLabel = uploadBtn.querySelector('.sat-upload-btn-label') as HTMLElement | null;
+
       uploadBtn.addEventListener('click', async () => {
-        uploadBtn.textContent = 'Uploading...';
         (uploadBtn as HTMLButtonElement).disabled = true;
-        try {
-          await this.result.upload(this.uploadEndpoint!);
-          uploadBtn.textContent = 'Uploaded Successfully!';
-        } catch (err: any) {
-          uploadBtn.textContent = 'Upload Failed';
-          console.error('[ShowAndTell] Upload error:', err);
+        if (feedbackEl) feedbackEl.innerHTML = '';
+
+        if (this.isPresigned) {
+          const presignedConfig = this.uploadConfig as PresignedUploadConfig;
+          if (uploadContainer) uploadContainer.style.display = 'flex';
+          if (statusLabel) statusLabel.textContent = 'Uploading recording to cloud...';
+          if (percentLabel) percentLabel.textContent = '0%';
+          if (progressFill) {
+            progressFill.style.width = '0%';
+            progressFill.classList.remove('is-complete');
+          }
+          if (btnLabel) btnLabel.textContent = 'Uploading...';
+
+          try {
+            const uploadResult = await this.result.uploadPresigned({
+              ...presignedConfig,
+              onProgress: (progress) => {
+                if (progressFill) progressFill.style.width = `${progress.percent}%`;
+                if (percentLabel) percentLabel.textContent = `${progress.percent}%`;
+                if (statusLabel) {
+                  statusLabel.textContent = progress.fileType === 'camera'
+                    ? `Uploading camera bubble (${progress.percent}%)...`
+                    : `Uploading recording (${progress.percent}%)...`;
+                }
+                if (btnLabel) btnLabel.textContent = `Uploading ${progress.percent}%...`;
+                presignedConfig.onProgress?.(progress);
+              }
+            });
+
+            if (progressFill) {
+              progressFill.style.width = '100%';
+              progressFill.classList.add('is-complete');
+            }
+            if (percentLabel) percentLabel.textContent = '100%';
+            if (statusLabel) statusLabel.textContent = 'Upload complete!';
+            if (btnLabel) btnLabel.textContent = 'Uploaded Successfully!';
+
+            if (uploadResult.publicUrl && feedbackEl) {
+              feedbackEl.innerHTML = `
+                <a href="${uploadResult.publicUrl}" target="_blank" rel="noopener" class="sat-upload-success-link">
+                  Open Link ↗
+                </a>
+                <button class="sat-upload-copy-btn" type="button" title="Copy public link">Copy Link</button>
+              `;
+              const copyBtn = feedbackEl.querySelector('.sat-upload-copy-btn');
+              copyBtn?.addEventListener('click', async () => {
+                try {
+                  await navigator.clipboard.writeText(uploadResult.publicUrl!);
+                  (copyBtn as HTMLButtonElement).textContent = 'Copied!';
+                  setTimeout(() => {
+                    (copyBtn as HTMLButtonElement).textContent = 'Copy Link';
+                  }, 2000);
+                } catch {
+                  window.open(uploadResult.publicUrl, '_blank');
+                }
+              });
+            }
+          } catch (err: any) {
+            (uploadBtn as HTMLButtonElement).disabled = false;
+            if (btnLabel) btnLabel.textContent = 'Retry Upload';
+            if (feedbackEl) {
+              feedbackEl.innerHTML = `<span class="sat-upload-error-msg">${escapeHtml(err.message || 'Upload failed')}</span>`;
+            }
+            console.error('[ShowAndTell] Presigned upload error:', err);
+          }
+        } else {
+          // Server upload
+          const endpoint = typeof this.uploadConfig === 'string'
+            ? this.uploadConfig
+            : (this.uploadConfig as ServerUploadConfig).endpoint;
+          const options = typeof this.uploadConfig === 'object'
+            ? (this.uploadConfig as ServerUploadConfig).options
+            : undefined;
+
+          if (btnLabel) btnLabel.textContent = 'Uploading...';
+          try {
+            const res = await this.result.upload(endpoint, options);
+            if (btnLabel) btnLabel.textContent = 'Uploaded Successfully!';
+            if (typeof this.uploadConfig === 'object' && (this.uploadConfig as ServerUploadConfig).onSuccess) {
+              (this.uploadConfig as ServerUploadConfig).onSuccess!(res);
+            }
+          } catch (err: any) {
+            (uploadBtn as HTMLButtonElement).disabled = false;
+            if (btnLabel) btnLabel.textContent = 'Upload Failed (Retry)';
+            console.error('[ShowAndTell] Server upload error:', err);
+            if (typeof this.uploadConfig === 'object' && (this.uploadConfig as ServerUploadConfig).onError) {
+              (this.uploadConfig as ServerUploadConfig).onError!(err);
+            }
+          }
         }
       });
     }

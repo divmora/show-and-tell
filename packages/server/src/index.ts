@@ -78,6 +78,102 @@ app.post('/api/upload', upload.any(), (req, res) => {
   });
 });
 
+// In-memory presigned ticket store for local simulation
+interface PresignedTicket {
+  filename: string;
+  mimeType?: string;
+  createdAt: number;
+}
+const presignedTickets = new Map<string, PresignedTicket>();
+
+// Presigned URL generation endpoint (Simulates AWS S3, Cloudflare R2, Supabase)
+app.post('/api/upload/presigned-url', (req, res) => {
+  const { filename, mimeType, method = 'PUT' } = req.body;
+  const ticketId = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+  const ext = path.extname(filename || '') || (mimeType?.includes('json') ? '.json' : '.webm');
+  const savedFilename = `show-and-tell-direct-${ticketId}${ext}`;
+
+  presignedTickets.set(ticketId, {
+    filename: savedFilename,
+    mimeType,
+    createdAt: Date.now()
+  });
+
+  const isPost = method.toUpperCase() === 'POST';
+
+  console.log(`[ShowAndTell Server] Generated presigned ${method} ticket:`, {
+    ticketId,
+    savedFilename,
+    mimeType
+  });
+
+  if (isPost) {
+    // Simulate S3 presigned POST policy form fields
+    return res.json({
+      url: `/api/upload/direct-post`,
+      method: 'POST',
+      fields: {
+        key: `uploads/${savedFilename}`,
+        bucket: 'mock-s3-bucket',
+        'X-Amz-Algorithm': 'AWS4-HMAC-SHA256',
+        ticketId
+      },
+      publicUrl: `/api/recordings/${savedFilename}`
+    });
+  }
+
+  // Standard direct PUT (S3 / Cloudflare R2 / Supabase)
+  return res.json({
+    url: `/api/upload/direct/${ticketId}`,
+    method: 'PUT',
+    headers: {
+      'Content-Type': mimeType || 'video/webm'
+    },
+    publicUrl: `/api/recordings/${savedFilename}`
+  });
+});
+
+// Direct streaming PUT upload endpoint (Simulates direct S3 / R2 / Supabase upload)
+app.put('/api/upload/direct/:ticketId', (req, res) => {
+  const ticket = presignedTickets.get(req.params.ticketId);
+  const filename = ticket ? ticket.filename : `show-and-tell-direct-${req.params.ticketId}.webm`;
+  const filePath = path.join(uploadsDir, filename);
+  const writeStream = fs.createWriteStream(filePath);
+
+  console.log(`[ShowAndTell Server] Streaming direct PUT upload: ${filename}`);
+
+  req.pipe(writeStream);
+
+  writeStream.on('finish', () => {
+    const stats = fs.existsSync(filePath) ? fs.statSync(filePath) : { size: 0 };
+    console.log(`[ShowAndTell Server] Finished direct PUT upload: ${filename} (${stats.size} bytes)`);
+    presignedTickets.delete(req.params.ticketId);
+    res.status(200).json({
+      success: true,
+      message: 'Direct presigned PUT completed',
+      url: `/api/recordings/${filename}`,
+      size: stats.size
+    });
+  });
+
+  writeStream.on('error', (err) => {
+    console.error(`[ShowAndTell Server] Direct upload stream error:`, err);
+    res.status(500).json({ success: false, error: err.message });
+  });
+});
+
+// Direct multipart POST upload endpoint (Simulates S3 Presigned POST Policy)
+app.post('/api/upload/direct-post', upload.any(), (req, res) => {
+  const file = (req.files && Array.isArray(req.files) && req.files.length > 0) ? req.files[0] : req.file;
+  console.log(`[ShowAndTell Server] Received direct presigned POST form upload:`, {
+    filename: file?.filename,
+    ticketId: req.body.ticketId
+  });
+
+  // S3 Presigned POST returns 204 No Content on success
+  res.status(204).end();
+});
+
 // Serve uploaded video recordings
 app.use('/api/recordings', express.static(uploadsDir));
 

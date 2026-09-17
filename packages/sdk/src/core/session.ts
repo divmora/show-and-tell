@@ -3,6 +3,9 @@ import {
   DiscontinueReason, 
   DomRecordingEvent,
   DurationStats, 
+  PresignedUploadConfig,
+  PresignedUploadContext,
+  PresignedUploadResult,
   RecordingMode,
   RecordingResult, 
   RecordingSession, 
@@ -14,6 +17,7 @@ import { DurationTracker } from './duration-tracker';
 import { EventEmitter } from '../utils/event-emitter';
 import { getExtensionForMimeType } from '../utils/codecs';
 import { generateStandalonePlayerHtml } from '../dom/standalone-player';
+import { uploadRecordingAssets } from '../utils/uploader';
 
 export interface SessionInitOptions {
   id: string;
@@ -201,6 +205,40 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
           throw new Error(`Upload failed with HTTP ${res.status}: ${res.statusText}`);
         }
         return res;
+      },
+      uploadPresigned: async (config: PresignedUploadConfig): Promise<PresignedUploadResult> => {
+        const primaryContext: PresignedUploadContext = {
+          id: this.id,
+          filename,
+          mimeType: this.mimeType,
+          size: finalBlob.size,
+          duration,
+          mode: this.mode,
+          fileType: 'recording'
+        };
+
+        let cameraContext: PresignedUploadContext | undefined;
+        if (cameraBlob) {
+          cameraContext = {
+            id: this.id,
+            filename: `camera_${this.id}.webm`,
+            mimeType: 'video/webm',
+            size: cameraBlob.size,
+            duration,
+            mode: this.mode,
+            fileType: 'camera'
+          };
+        }
+
+        const results = await uploadRecordingAssets({
+          primaryBlob: finalBlob,
+          primaryContext,
+          cameraBlob,
+          cameraContext,
+          config
+        });
+
+        return results[0];
       },
       revoke: () => {
         URL.revokeObjectURL(objectUrl);

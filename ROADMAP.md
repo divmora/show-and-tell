@@ -60,16 +60,6 @@ This document serves as the **living product roadmap** for ShowAndTell.
 
 ## 4. Storage & Cloud Uploads
 
-- [ ] **Direct S3 / Cloudflare R2 / Supabase Presigned URL Upload**
-  - Add first-class support for direct presigned URL upload providers:
-    ```ts
-    upload: {
-      getPresignedUrl: async (filename, mimeType) => ({ url, method: 'PUT', headers }),
-      onProgress: (percent) => console.log(`Uploading: ${percent}%`),
-    }
-    ```
-  - Enables serverless deployments to upload multi-hundred-megabyte recordings directly to object storage without proxying through application servers.
-
 - [ ] **IndexedDB Auto-Pruning & Storage Budget Cap**
   - Automatic TTL expiration for recovered/unsaved sessions older than 7 days.
   - Configurable storage budget (e.g., max 300 MB) with LRU eviction to prevent local disk bloat over long periods of usage.

@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const storagePersistenceCheckbox = document.getElementById('storagePersistence');
   const domMaskInputs = document.getElementById('domMaskInputs');
   const domMaskLabel = document.getElementById('domMaskLabel');
+  const uploadModeSelect = document.getElementById('uploadMode');
   const btnStartText = document.getElementById('btnStartText');
 
   const embedCodeSnippet = document.getElementById('embedCodeSnippet');
@@ -94,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const preview = previewModalCheckbox ? previewModalCheckbox.checked : true;
     const storage = storagePersistenceCheckbox ? storagePersistenceCheckbox.checked : true;
     const maskInputs = domMaskInputs ? domMaskInputs.checked : true;
+    const uploadMode = uploadModeSelect?.value || 'presigned';
 
     if (snippetModeBadge) {
       if (isDom) {
@@ -154,7 +156,22 @@ document.addEventListener('DOMContentLoaded', () => {
     code += `  ui: ${ui}, // Floating draggable recording toolbar\n`;
     code += `  previewModal: ${preview}, // Post-recording playback & export modal\n`;
     code += `  storage: ${storage}, // IndexedDB crash & reload recovery\n`;
-    code += `  uploadEndpoint: '/api/upload', // Optional server upload target\n`;
+    if (uploadMode === 'presigned') {
+      code += `  // Direct Presigned Upload (AWS S3 / Cloudflare R2 / Supabase)\n`;
+      code += `  upload: {\n`;
+      code += `    getPresignedUrl: async (context) => {\n`;
+      code += `      const res = await fetch('/api/upload/presigned-url', {\n`;
+      code += `        method: 'POST',\n`;
+      code += `        headers: { 'Content-Type': 'application/json' },\n`;
+      code += `        body: JSON.stringify(context)\n`;
+      code += `      });\n`;
+      code += `      return res.json();\n`;
+      code += `    },\n`;
+      code += `    onProgress: ({ percent, fileType }) => console.log(\`Uploading \${fileType}: \${percent}%\`),\n`;
+      code += `  },\n`;
+    } else if (uploadMode === 'server') {
+      code += `  uploadEndpoint: '/api/upload', // Traditional multipart server upload\n`;
+    }
     code += `});\n\n`;
 
     code += `// 3. Listen to session lifecycle events\n`;
@@ -276,7 +293,8 @@ document.addEventListener('DOMContentLoaded', () => {
     floatingUiCheckbox,
     previewModalCheckbox,
     storagePersistenceCheckbox,
-    domMaskInputs
+    domMaskInputs,
+    uploadModeSelect
   ];
 
   snippetTriggerElements.forEach((el) => {
@@ -321,6 +339,35 @@ document.addEventListener('DOMContentLoaded', () => {
       progressBar.style.width = '0%';
       progressBar.classList.remove('warning');
 
+      let uploadConfig = undefined;
+      let uploadEndpoint = undefined;
+      const uploadChoice = uploadModeSelect ? uploadModeSelect.value : 'presigned';
+
+      if (uploadChoice === 'presigned' && !window.location.origin.includes('github.io')) {
+        uploadConfig = {
+          getPresignedUrl: async (context) => {
+            const res = await fetch('/api/upload/presigned-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                filename: context.filename,
+                mimeType: context.mimeType,
+                size: context.size,
+                fileType: context.fileType,
+                method: 'PUT'
+              })
+            });
+            if (!res.ok) throw new Error(`Failed to generate presigned upload ticket: HTTP ${res.status}`);
+            return res.json();
+          },
+          onProgress: (p) => {
+            console.log(`[ShowAndTell Demo] Presigned upload progress: ${p.percent}% (${p.fileType})`);
+          }
+        };
+      } else if (uploadChoice === 'server' && !window.location.origin.includes('github.io')) {
+        uploadEndpoint = '/api/upload';
+      }
+
       activeSession = await window.ShowAndTell.startRecording({
         mode: mode,
         dom: {
@@ -346,7 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ui: floatingUiCheckbox.checked,
         previewModal: previewModalCheckbox.checked,
         storage: storagePersistenceCheckbox.checked,
-        uploadEndpoint: window.location.origin.includes('github.io') ? undefined : '/api/upload'
+        upload: uploadConfig,
+        uploadEndpoint: uploadEndpoint
       });
 
       updateUiState('recording');
