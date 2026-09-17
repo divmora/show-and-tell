@@ -1,6 +1,7 @@
 import { DurationTracker } from '../core/duration-tracker';
-import { RecordingSession, CameraConfig } from '../types';
+import { RecordingSession, CameraConfig, ThemeConfig } from '../types';
 import { formatDuration } from '../utils/time';
+import { resolveThemeVariables } from './theme';
 
 export interface PipControllerOptions {
   session: RecordingSession;
@@ -8,6 +9,7 @@ export interface PipControllerOptions {
   cameraStream?: MediaStream;
   micStream?: MediaStream;
   cameraConfig?: CameraConfig;
+  theme?: ThemeConfig;
   hasMic?: boolean;
   onClose?: () => void;
   onToggleMic?: () => boolean;
@@ -114,6 +116,13 @@ export class PipController {
     const doc = this.pipWindow.document;
     doc.title = 'ShowAndTell — Recording Active';
 
+    if (options.theme) {
+      const vars = resolveThemeVariables(options.theme);
+      for (const [prop, val] of Object.entries(vars)) {
+        doc.documentElement.style.setProperty(prop, val);
+      }
+    }
+
     // 1. Injected styles
     const styleEl = doc.createElement('style');
     styleEl.textContent = `
@@ -123,7 +132,7 @@ export class PipController {
         height: 100%;
         background-color: #0b0f19;
         color: #ffffff;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-family: var(--sat-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
         user-select: none;
         overflow: hidden;
         display: flex;
@@ -525,6 +534,19 @@ export class PipController {
     if (this.timerEl) {
       this.timerEl.textContent = formatDuration(seconds);
     }
+  }
+
+  setTheme(theme: ThemeConfig): void {
+    if (!this.pipWindow || !this.pipWindow.document) return;
+    const docEl = this.pipWindow.document.documentElement;
+    const mode = theme.mode === 'auto'
+      ? (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      : (theme.mode || 'dark');
+    docEl.setAttribute('data-theme', mode);
+    const vars = resolveThemeVariables(theme);
+    Object.entries(vars).forEach(([prop, val]) => {
+      docEl.style.setProperty(prop, val);
+    });
   }
 
   updateMic(isMuted: boolean): void {

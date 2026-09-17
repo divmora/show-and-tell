@@ -330,4 +330,41 @@ describe('useShowAndTell', () => {
     });
     expect(result.current.isSilentMicWarning).toBe(false);
   });
+
+  it('calls ShowAndTell.setTheme when setTheme is invoked', () => {
+    const setThemeSpy = vi.spyOn(ShowAndTell, 'setTheme').mockImplementation(() => {});
+    const { result } = renderHook(() => useShowAndTell());
+
+    act(() => {
+      result.current.setTheme({
+        mode: 'light',
+        primaryColor: '#6366f1'
+      });
+    });
+
+    expect(setThemeSpy).toHaveBeenCalledWith({
+      mode: 'light',
+      primaryColor: '#6366f1'
+    });
+  });
+
+  it('syncs options.theme to ShowAndTell.setTheme on mount and update', () => {
+    const setThemeSpy = vi.spyOn(ShowAndTell, 'setTheme').mockImplementation(() => {});
+    const { rerender } = renderHook(
+      (props) => useShowAndTell(props),
+      { initialProps: { theme: { mode: 'dark' as const, primaryColor: '#10b981' } } }
+    );
+
+    expect(setThemeSpy).toHaveBeenCalledWith({
+      mode: 'dark',
+      primaryColor: '#10b981'
+    });
+
+    rerender({ theme: { mode: 'light' as const, primaryColor: '#f43f5e' } });
+
+    expect(setThemeSpy).toHaveBeenCalledWith({
+      mode: 'light',
+      primaryColor: '#f43f5e'
+    });
+  });
 });

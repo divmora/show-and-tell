@@ -5,6 +5,7 @@ import type { ShowAndTellButtonProps, UseShowAndTellReturn } from '../types';
 
 export const ShowAndTellButton: React.FC<ShowAndTellButtonProps> = ({
   config,
+  theme,
   onStart,
   onStop,
   onError,
@@ -16,8 +17,10 @@ export const ShowAndTellButton: React.FC<ShowAndTellButtonProps> = ({
   children
 }) => {
   const context = useContext(ShowAndTellContext);
+  const effectiveTheme = theme || config?.theme;
   const localRecording = useShowAndTell({
     ...config,
+    ...(effectiveTheme ? { theme: effectiveTheme } : {}),
     onStart,
     onStop,
     onError
@@ -25,7 +28,7 @@ export const ShowAndTellButton: React.FC<ShowAndTellButtonProps> = ({
 
   // Prefer context when wrapped in ShowAndTellProvider without local prop overrides
   const recording: UseShowAndTellReturn =
-    context && !config && !onStart && !onStop && !onError ? context : localRecording;
+    context && !config && !theme && !onStart && !onStop && !onError ? context : localRecording;
 
   const { state, isRecording, isPaused, formattedElapsed, startRecording, stopRecording } =
     recording;
@@ -55,6 +58,12 @@ export const ShowAndTellButton: React.FC<ShowAndTellButtonProps> = ({
     return <>{children(recording)}</>;
   }
 
+  const idleBg = effectiveTheme?.primaryColor || (effectiveTheme?.mode === 'light' ? '#f1f5f9' : '#0f172a');
+  const idleColor = effectiveTheme?.primaryContrastColor || effectiveTheme?.textColor || (effectiveTheme?.mode === 'light' ? '#0f172a' : '#ffffff');
+  const borderRadius = effectiveTheme?.borderRadius || '8px';
+  const fontFamily = effectiveTheme?.fontFamily ||
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
   const defaultButtonStyle: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -62,17 +71,16 @@ export const ShowAndTellButton: React.FC<ShowAndTellButtonProps> = ({
     padding: '8px 16px',
     fontSize: '14px',
     fontWeight: 500,
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    borderRadius: '8px',
-    border: '1px solid rgba(0, 0, 0, 0.1)',
+    fontFamily,
+    borderRadius,
+    border: effectiveTheme?.borderColor ? `1px solid ${effectiveTheme.borderColor}` : '1px solid rgba(0, 0, 0, 0.1)',
     cursor: isTransitioning ? 'not-allowed' : 'pointer',
     opacity: isTransitioning ? 0.75 : 1,
     transition: 'all 0.15s ease-in-out',
     userSelect: 'none',
     boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-    backgroundColor: isRecording || isPaused ? '#ef4444' : '#0f172a',
-    color: '#ffffff',
+    backgroundColor: isRecording || isPaused ? '#ef4444' : idleBg,
+    color: isRecording || isPaused ? '#ffffff' : idleColor,
     ...style
   };
 

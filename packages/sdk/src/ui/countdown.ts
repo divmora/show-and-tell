@@ -1,7 +1,9 @@
-import { CountdownConfig } from '../types';
+import { CountdownConfig, ThemeConfig } from '../types';
+import { applyThemeToHost } from './theme';
 
 export interface CountdownOptions extends CountdownConfig {
   onTick?: (remaining: number) => void;
+  theme?: ThemeConfig;
 }
 
 const COUNTDOWN_STYLES = `
@@ -18,8 +20,8 @@ const COUNTDOWN_STYLES = `
   background: rgba(15, 23, 42, 0.72);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #ffffff;
+  font-family: var(--sat-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
+  color: var(--sat-text, #ffffff);
   user-select: none;
   cursor: default;
   animation: sat-countdown-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -39,18 +41,18 @@ const COUNTDOWN_STYLES = `
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  background: rgba(24, 24, 27, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 28px;
+  background: var(--sat-bg, rgba(24, 24, 27, 0.85));
+  border: 1px solid var(--sat-border, rgba(255, 255, 255, 0.15));
+  border-radius: var(--sat-radius-lg, 28px);
   padding: 36px 44px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--sat-shadow, 0 25px 50px -12px rgba(0, 0, 0, 0.6));
   text-align: center;
 }
 
 .sat-countdown-label {
   font-size: 15px;
   font-weight: 500;
-  color: #94a3b8;
+  color: var(--sat-text-muted, #94a3b8);
   letter-spacing: 0.3px;
 }
 
@@ -79,7 +81,7 @@ const COUNTDOWN_STYLES = `
 
 .sat-countdown-progress {
   fill: none;
-  stroke: #3b82f6;
+  stroke: var(--sat-primary, #3b82f6);
   stroke-width: 6;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.95s linear, stroke 0.2s ease;
@@ -90,7 +92,7 @@ const COUNTDOWN_STYLES = `
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: #ffffff;
+  color: var(--sat-text, #ffffff);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -100,7 +102,7 @@ const COUNTDOWN_STYLES = `
 
 .sat-countdown-number.is-go {
   font-size: 46px;
-  color: #34d399;
+  color: var(--sat-success, #34d399);
   text-shadow: 0 0 24px rgba(52, 211, 153, 0.5);
 }
 
@@ -130,10 +132,10 @@ const COUNTDOWN_STYLES = `
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #3b82f6;
-  color: #ffffff;
+  background: var(--sat-primary, #3b82f6);
+  color: var(--sat-primary-contrast, #ffffff);
   border: none;
-  border-radius: 9999px;
+  border-radius: var(--sat-radius-full, 9999px);
   padding: 8px 18px;
   font-size: 13px;
   font-weight: 600;
@@ -143,7 +145,7 @@ const COUNTDOWN_STYLES = `
 }
 
 .sat-btn-skip:hover {
-  background: #2563eb;
+  background: var(--sat-primary-hover, #2563eb);
   transform: translateY(-1px);
 }
 
@@ -154,10 +156,10 @@ const COUNTDOWN_STYLES = `
 .sat-btn-cancel {
   display: inline-flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
+  background: var(--sat-btn-bg, rgba(255, 255, 255, 0.08));
+  color: var(--sat-text-secondary, #cbd5e1);
+  border: 1px solid var(--sat-btn-border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--sat-radius-full, 9999px);
   padding: 8px 16px;
   font-size: 13px;
   font-weight: 500;
@@ -252,6 +254,7 @@ export class CountdownOverlay {
 
   private mount(): void {
     this.hostElement = document.createElement('show-and-tell-countdown');
+    applyThemeToHost(this.hostElement, this.options.theme);
     this.shadowRoot = this.hostElement.attachShadow({ mode: 'open' });
 
     const styleEl = document.createElement('style');

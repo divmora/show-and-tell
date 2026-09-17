@@ -1,17 +1,22 @@
-import { RecoverableSession } from '../types';
+import { RecoverableSession, ThemeConfig } from '../types';
 import { formatBytes, formatDuration } from '../utils/time';
 import { BANNER_STYLES } from './styles';
+import { applyThemeToHost } from './theme';
 
 export class RecoveryBanner {
   private hostElement?: HTMLElement;
   private shadowRoot?: ShadowRoot;
 
-  constructor(private recoverable: RecoverableSession) {}
+  constructor(
+    private recoverable: RecoverableSession,
+    private theme?: ThemeConfig
+  ) {}
 
   mount(): void {
     if (typeof document === 'undefined') return;
 
     this.hostElement = document.createElement('show-and-tell-banner');
+    applyThemeToHost(this.hostElement, this.theme);
     this.shadowRoot = this.hostElement.attachShadow({ mode: 'open' });
 
     const styleEl = document.createElement('style');

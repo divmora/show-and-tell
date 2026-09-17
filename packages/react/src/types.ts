@@ -5,8 +5,12 @@ import type {
   RecordingResult,
   RecordingState,
   DurationStats,
-  AudioLevelData
+  AudioLevelData,
+  ThemeConfig,
+  ThemeMode
 } from 'show-and-tell';
+
+export type { ThemeConfig, ThemeMode };
 
 export interface UseShowAndTellOptions extends ShowAndTellConfig {
   /** Stop active recording automatically when component unmounts (default: false) */
@@ -72,6 +76,8 @@ export interface UseShowAndTellReturn {
   setSpotlight: (enabled: boolean) => void;
   /** Trigger a click ripple animation at specified viewport coordinates */
   triggerClickRipple: (x: number, y: number, color?: string) => void;
+  /** Dynamically update the visual theme tokens and mode */
+  setTheme: (theme: ThemeConfig) => void;
   /** Reset error state */
   clearError: () => void;
 }
@@ -83,6 +89,8 @@ export interface ShowAndTellProviderProps extends UseShowAndTellOptions {
 export interface ShowAndTellWidgetProps {
   /** Configuration for the recording session */
   config?: ShowAndTellConfig;
+  /** Optional custom theme or white-label styling override */
+  theme?: ThemeConfig;
   /** Callback when recording session starts */
   onStart?: (session: RecordingSession) => void;
   /** Callback when recording finishes and result is generated */
@@ -102,6 +110,8 @@ export interface ShowAndTellWidgetProps {
 export interface ShowAndTellButtonProps {
   /** ShowAndTell recording configuration */
   config?: ShowAndTellConfig;
+  /** Optional custom theme or white-label styling override */
+  theme?: ThemeConfig;
   /** Callback when recording session starts */
   onStart?: (session: RecordingSession) => void;
   /** Callback when recording finishes and result is generated */

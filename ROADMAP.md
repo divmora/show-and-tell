@@ -21,9 +21,6 @@ This document serves as the **living product roadmap** for ShowAndTell.
 ### 💾 4. Storage & Cloud Uploads
 - *(Active implementation tasks for IndexedDB auto-pruning and storage budget caps [#20](https://github.com/divmora/show-and-tell/issues/20) are tracked directly in GitHub Issues)*
 
-### 🎨 5. Developer Ecosystem & Theming
-- *(Active implementation tasks for custom theming and white-label styling [#21](https://github.com/divmora/show-and-tell/issues/21) are tracked directly in GitHub Issues)*
-
 ---
 
 ## 🔮 Long-Term Architectural Vision (Unassigned Backlog)

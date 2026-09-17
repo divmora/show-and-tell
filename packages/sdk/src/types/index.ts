@@ -179,6 +179,43 @@ export interface AudioMeterConfig {
   silentThresholdSeconds?: number;
 }
 
+export type ThemeMode = 'dark' | 'light' | 'auto';
+
+export interface ThemeConfig {
+  /** Color theme mode: 'dark' (default) | 'light' | 'auto' (respects OS prefers-color-scheme) */
+  mode?: ThemeMode;
+  /** Primary accent color for active buttons, highlights, progress indicators (default: '#2563eb') */
+  primaryColor?: string;
+  /** Primary accent hover color (default: auto-calculated or darker shade of primaryColor) */
+  primaryHoverColor?: string;
+  /** Primary contrast text color when on top of primaryColor (default: '#ffffff') */
+  primaryContrastColor?: string;
+  /** Custom font family stack across toolbar, modal, and banner */
+  fontFamily?: string;
+  /** Monospace font family stack for timers and technical metrics */
+  fontMono?: string;
+  /** Base border radius for cards, buttons, dialogs (e.g. '8px', '12px', '16px') */
+  borderRadius?: string;
+  /** Custom background color for widgets/dialogs */
+  backgroundColor?: string;
+  /** Custom surface/card background color */
+  surfaceColor?: string;
+  /** Custom primary text color */
+  textColor?: string;
+  /** Custom secondary/muted text color */
+  textMutedColor?: string;
+  /** Custom border color */
+  borderColor?: string;
+  /** Danger / Stop button color (default: '#ef4444') */
+  dangerColor?: string;
+  /** Warning / Pause color (default: '#eab308') */
+  warningColor?: string;
+  /** Success / Complete color (default: '#10b981') */
+  successColor?: string;
+  /** Arbitrary custom CSS variable overrides (e.g. { '--sat-primary': '#6366f1' }) */
+  cssVariables?: Record<string, string>;
+}
+
 export interface ShowAndTellConfig {
   /** Recording mode: 'pixel' (screen capture, default), 'dom' (in-app session replay), or 'auto' (automatic detection based on device capabilities) */
   mode?: RequestedRecordingMode;
@@ -194,6 +231,8 @@ export interface ShowAndTellConfig {
   camera?: boolean | CameraConfig;
   /** Live microphone VU meter and silent mic detection (default: true when mic is active) */
   audioMeter?: boolean | AudioMeterConfig;
+  /** Custom theming and white-label styling across floating widget, modal, and banner */
+  theme?: ThemeConfig;
   /** Always-on-top Document Picture-in-Picture floating window across all windows, applications, and tabs */
   alwaysOnTop?: boolean;
   /** Cursor interaction feedback effects (click ripple animations and cursor spotlight) (default: true) */

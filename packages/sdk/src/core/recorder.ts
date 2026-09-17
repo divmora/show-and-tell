@@ -6,7 +6,8 @@ import {
   RecordingResult, 
   RecordingSession, 
   RequestedRecordingMode,
-  ShowAndTellConfig 
+  ShowAndTellConfig,
+  ThemeConfig 
 } from '../types';
 import { AudioMixer } from './audio-mixer';
 import { DurationTracker } from './duration-tracker';
@@ -82,12 +83,31 @@ export class RecorderEngine {
     return this.activeSession;
   }
 
+  private configuredTheme?: ThemeConfig;
+
+  /**
+   * Dynamically updates the theme across active recording UI components (widget, PiP, camera bubble).
+   */
+  setTheme(theme: ThemeConfig): void {
+    this.configuredTheme = theme;
+    if (this.activeConfig) {
+      this.activeConfig.theme = theme;
+    }
+    this.widget?.setTheme(theme);
+    this.cameraBubble?.setTheme(theme);
+    this.pipController?.setTheme(theme);
+  }
+
   async startRecording(config: ShowAndTellConfig = {}): Promise<RecordingSession> {
     if (this.isRecording()) {
       throw new Error('A recording session is already active. Stop the current recording before starting a new one.');
     }
 
-    this.activeConfig = config;
+    const effectiveTheme = config.theme ?? this.configuredTheme;
+    this.activeConfig = {
+      ...config,
+      ...(effectiveTheme ? { theme: effectiveTheme } : {})
+    };
     const isScreenCaptureSupported = RecorderEngine.isScreenCaptureSupported();
     const requestedMode = config.mode || 'pixel';
     let mode: RecordingMode;
@@ -174,7 +194,7 @@ export class RecorderEngine {
             },
             audio: false
           });
-          this.cameraBubble = new CameraBubble(this.cameraStream, cameraConfig);
+          this.cameraBubble = new CameraBubble(this.cameraStream, cameraConfig, config.theme);
           this.cameraBubble.mount();
 
           // Start recording camera stream for synchronized DOM replay
@@ -338,7 +358,7 @@ export class RecorderEngine {
 
       // Mount widget
       if (config.ui !== false) {
-        this.widget = new RecordingWidget(this.activeSession, !!this.micStream);
+        this.widget = new RecordingWidget(this.activeSession, !!this.micStream, config.theme);
         this.widget.onPopoutRequest = () => {
           this.openPipWindow();
         };
@@ -401,7 +421,7 @@ export class RecorderEngine {
           },
           audio: false
         });
-        this.cameraBubble = new CameraBubble(this.cameraStream, cameraConfig);
+        this.cameraBubble = new CameraBubble(this.cameraStream, cameraConfig, config.theme);
         this.cameraBubble.mount();
 
         // In Pixel mode:
@@ -591,7 +611,7 @@ export class RecorderEngine {
 
     // 13. Mount Floating UI Widget (if enabled)
     if (config.ui !== false) {
-      this.widget = new RecordingWidget(this.activeSession, !!this.micStream);
+      this.widget = new RecordingWidget(this.activeSession, !!this.micStream, config.theme);
       this.widget.onPopoutRequest = () => {
         this.openPipWindow();
       };
@@ -624,6 +644,7 @@ export class RecorderEngine {
       cameraStream: this.cameraStream,
       micStream: this.micStream,
       cameraConfig: typeof this.activeConfig.camera === 'object' ? this.activeConfig.camera : {},
+      theme: this.activeConfig.theme,
       hasMic: !!this.micStream,
       onClose: () => {
         // When PiP window is closed/docked, restore in-page widget & camera bubble
@@ -673,7 +694,8 @@ export class RecorderEngine {
     return CountdownOverlay.show({
       seconds,
       audio,
-      label
+      label,
+      theme: config.theme
     });
   }
 
@@ -923,7 +945,7 @@ export class RecorderEngine {
 
     // Mount Preview Modal if enabled
     if (config.previewModal !== false) {
-      const modal = new PreviewModal(result, config.upload || config.uploadEndpoint);
+      const modal = new PreviewModal(result, config.upload || config.uploadEndpoint, config.theme);
       modal.mount();
     }
 

@@ -216,5 +216,43 @@ describe('ShowAndTellContext & Components', () => {
         expect(ShowAndTell.startRecording).toHaveBeenCalledTimes(1);
       });
     });
+
+    it('applies custom theme styling to ShowAndTellButton', () => {
+      render(
+        <ShowAndTellButton
+          theme={{
+            mode: 'light',
+            primaryColor: '#8b5cf6',
+            borderRadius: '16px',
+            fontFamily: 'Courier New'
+          }}
+        />
+      );
+
+      const button = screen.getByRole('button', { name: 'Record Screen' });
+      expect(button.style.backgroundColor).toBe('rgb(139, 92, 246)');
+      expect(button.style.borderRadius).toBe('16px');
+      expect(button.style.fontFamily).toContain('Courier New');
+    });
+
+    it('applies custom theme styling to ShowAndTellWidget', () => {
+      const { container } = render(
+        <ShowAndTellWidget
+          theme={{
+            mode: 'light',
+            primaryColor: '#ec4899',
+            surfaceColor: '#ffffff',
+            borderRadius: '20px'
+          }}
+        />
+      );
+
+      const widgetCard = container.firstElementChild as HTMLElement;
+      expect(widgetCard.style.borderRadius).toBe('20px');
+      expect(widgetCard.style.backgroundColor).toBe('rgb(255, 255, 255)');
+
+      const startBtn = screen.getByRole('button', { name: 'Start Recording' });
+      expect(startBtn.style.backgroundColor).toBe('rgb(236, 72, 153)');
+    });
   });
 });

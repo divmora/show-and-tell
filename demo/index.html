@@ -235,6 +235,55 @@
           </div>
         </div>
 
+        <!-- Custom Theming & White-Label Styling -->
+        <div class="form-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+          <label style="font-weight: 600; color: #60a5fa; display: flex; align-items: center; gap: 6px;">
+            <span>🎨 White-Label Styling & CSS Tokens</span>
+          </label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+            <div>
+              <label for="themeMode" style="font-size: 12px; color: var(--text-secondary);">Theme Mode</label>
+              <select id="themeMode" style="width: 100%;">
+                <option value="dark" selected>Dark (Default)</option>
+                <option value="light">Light Mode</option>
+                <option value="auto">Auto (System)</option>
+              </select>
+            </div>
+            <div>
+              <label for="themeBorderRadius" style="font-size: 12px; color: var(--text-secondary);">Border Radius</label>
+              <select id="themeBorderRadius" style="width: 100%;">
+                <option value="8px">8px (Subtle)</option>
+                <option value="12px" selected>12px (Default)</option>
+                <option value="20px">20px (Modern Pill)</option>
+                <option value="0px">0px (Sharp Box)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top: 10px;">
+            <label style="font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 4px;">Primary Accent Color</label>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <input type="color" id="themePrimaryColor" value="#3b82f6" style="width: 38px; height: 32px; border: none; border-radius: 6px; cursor: pointer; background: none;" />
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn-theme-preset" data-color="#3b82f6" style="width: 22px; height: 22px; border-radius: 50%; background: #3b82f6; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;" title="Blue"></button>
+                <button type="button" class="btn-theme-preset" data-color="#8b5cf6" style="width: 22px; height: 22px; border-radius: 50%; background: #8b5cf6; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;" title="Purple"></button>
+                <button type="button" class="btn-theme-preset" data-color="#10b981" style="width: 22px; height: 22px; border-radius: 50%; background: #10b981; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;" title="Emerald"></button>
+                <button type="button" class="btn-theme-preset" data-color="#f43f5e" style="width: 22px; height: 22px; border-radius: 50%; background: #f43f5e; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;" title="Rose"></button>
+                <button type="button" class="btn-theme-preset" data-color="#f59e0b" style="width: 22px; height: 22px; border-radius: 50%; background: #f59e0b; border: 1px solid rgba(255,255,255,0.4); cursor: pointer;" title="Amber"></button>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 10px; display: flex; gap: 8px;">
+            <button type="button" id="btnApplyTheme" class="btn-outline" style="flex: 1; font-size: 12px; padding: 6px 10px;">
+              ⚡ Apply Theme (ShowAndTell.setTheme)
+            </button>
+            <button type="button" id="btnResetTheme" class="btn-outline" style="font-size: 12px; padding: 6px 10px;">
+              ↺ Reset
+            </button>
+          </div>
+        </div>
+
         <div class="form-group">
           <label for="uploadMode">Cloud Upload & Storage</label>
           <select id="uploadMode">

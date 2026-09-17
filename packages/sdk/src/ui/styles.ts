@@ -1,10 +1,10 @@
 export const WIDGET_STYLES = `
 :host {
   all: initial;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--sat-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
   font-size: 14px;
   line-height: 1.5;
-  color: #ffffff;
+  color: var(--sat-text, #ffffff);
   z-index: 2147483647;
   position: fixed;
 }
@@ -20,16 +20,16 @@ export const WIDGET_STYLES = `
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(24, 24, 27, 0.88);
+  background: var(--sat-bg, rgba(24, 24, 27, 0.88));
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 9999px;
+  border: 1px solid var(--sat-border, rgba(255, 255, 255, 0.12));
+  border-radius: var(--sat-radius-full, 9999px);
   padding: 8px 14px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--sat-shadow, 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5));
   user-select: none;
   cursor: default;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
   max-width: 90vw;
 }
 
@@ -56,12 +56,12 @@ export const WIDGET_STYLES = `
   cursor: grab;
   display: flex;
   align-items: center;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--sat-text-muted, rgba(255, 255, 255, 0.4));
   padding: 2px 4px;
 }
 
 .sat-drag-handle:hover {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--sat-text, rgba(255, 255, 255, 0.8));
 }
 
 .sat-drag-handle:active {
@@ -78,12 +78,12 @@ export const WIDGET_STYLES = `
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  background-color: #ef4444;
+  background-color: var(--sat-danger-border, #ef4444);
   animation: sat-dot-pulse 1.5s infinite;
 }
 
 .sat-paused .sat-dot {
-  background-color: #eab308;
+  background-color: var(--sat-warning, #eab308);
   animation: none;
 }
 
@@ -109,11 +109,11 @@ export const WIDGET_STYLES = `
 }
 
 .sat-timer-text {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--sat-font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
   font-weight: 600;
   font-size: 13px;
   letter-spacing: 0.5px;
-  color: #f4f4f5;
+  color: var(--sat-text, #f4f4f5);
 }
 
 .sat-warning .sat-timer-text {
@@ -122,14 +122,14 @@ export const WIDGET_STYLES = `
 
 .sat-timer-sub {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--sat-text-muted, rgba(255, 255, 255, 0.5));
   line-height: 1;
 }
 
 .sat-divider {
   width: 1px;
   height: 20px;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--sat-border, rgba(255, 255, 255, 0.15));
   margin: 0 2px;
 }
 
@@ -140,10 +140,10 @@ export const WIDGET_STYLES = `
 }
 
 .sat-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border-radius: 9999px;
+  background: var(--sat-btn-bg, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--sat-btn-border, rgba(255, 255, 255, 0.1));
+  color: var(--sat-text, #ffffff);
+  border-radius: var(--sat-radius-full, 9999px);
   width: 32px;
   height: 32px;
   display: flex;
@@ -156,7 +156,7 @@ export const WIDGET_STYLES = `
 }
 
 .sat-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--sat-btn-hover, rgba(255, 255, 255, 0.2));
   transform: translateY(-1px);
 }
 
@@ -165,13 +165,13 @@ export const WIDGET_STYLES = `
 }
 
 .sat-btn-stop {
-  background: #dc2626;
-  border-color: #ef4444;
+  background: var(--sat-danger, #dc2626);
+  border-color: var(--sat-danger-border, #ef4444);
   color: white;
 }
 
 .sat-btn-stop:hover {
-  background: #b91c1c;
+  background: var(--sat-danger-hover, #b91c1c);
 }
 
 .sat-btn.sat-btn-active-toggle {
@@ -182,21 +182,60 @@ export const WIDGET_STYLES = `
 
 .sat-btn.sat-btn-active-spotlight {
   background: rgba(59, 130, 246, 0.3);
-  border-color: #3b82f6;
-  color: #60a5fa;
+  border-color: var(--sat-primary, #3b82f6);
+  color: var(--sat-primary-hover, #60a5fa);
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
 }
 
 .sat-btn.sat-btn-pip {
   background: rgba(59, 130, 246, 0.15);
-  border-color: rgba(59, 130, 246, 0.35);
-  color: #93c5fd;
+  border-color: var(--sat-primary, #3b82f6);
+  color: var(--sat-primary-hover, #93c5fd);
 }
 
 .sat-btn.sat-btn-pip:hover {
-  background: #2563eb;
-  border-color: #3b82f6;
-  color: #ffffff;
+  background: var(--sat-primary, #2563eb);
+  border-color: var(--sat-primary-hover, #1d4ed8);
+  color: var(--sat-primary-contrast, #ffffff);
+}
+
+/* Light mode overrides for widget */
+:host([data-theme="light"]) .sat-drag-handle,
+:host(.sat-theme-light) .sat-drag-handle {
+  color: var(--sat-text-muted, rgba(0, 0, 0, 0.4));
+}
+
+:host([data-theme="light"]) .sat-drag-handle:hover,
+:host(.sat-theme-light) .sat-drag-handle:hover {
+  color: var(--sat-text, rgba(0, 0, 0, 0.8));
+}
+
+:host([data-theme="light"]) .sat-timer-text,
+:host(.sat-theme-light) .sat-timer-text {
+  color: var(--sat-text, #09090b);
+}
+
+:host([data-theme="light"]) .sat-timer-sub,
+:host(.sat-theme-light) .sat-timer-sub {
+  color: var(--sat-text-muted, #71717a);
+}
+
+:host([data-theme="light"]) .sat-divider,
+:host(.sat-theme-light) .sat-divider {
+  background-color: var(--sat-border, rgba(0, 0, 0, 0.12));
+}
+
+:host([data-theme="light"]) .sat-vu-bar,
+:host(.sat-theme-light) .sat-vu-bar {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+:host([data-theme="light"]) .sat-silent-warning,
+:host(.sat-theme-light) .sat-silent-warning {
+  background: var(--sat-bg-solid, #ffffff);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  color: #d97706;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
 }
 
 .sat-icon {
@@ -305,10 +344,10 @@ export const WIDGET_STYLES = `
 export const MODAL_STYLES = `
 :host {
   all: initial;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--sat-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
   font-size: 14px;
   line-height: 1.5;
-  color: #18181b;
+  color: var(--sat-modal-text, #18181b);
   z-index: 2147483647;
   position: fixed;
   inset: 0;
@@ -332,18 +371,18 @@ export const MODAL_STYLES = `
 
 .sat-modal-dialog {
   position: relative;
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--sat-modal-bg, #ffffff);
+  border-radius: var(--sat-radius-lg, 16px);
   width: 90%;
   max-width: 640px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--sat-shadow, 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1));
   animation: sat-scale-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 1;
-  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), height 0.2s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.2s, max-height 0.2s;
+  transition: width 0.2s cubic-bezier(0.16, 1, 0.3, 1), height 0.2s cubic-bezier(0.16, 1, 0.3, 1), max-width 0.2s, max-height 0.2s, background-color 0.2s;
 }
 
 .sat-modal-dialog.sat-modal-dialog-maximized {
@@ -391,7 +430,7 @@ export const MODAL_STYLES = `
 
 .sat-modal-header {
   padding: 16px 20px;
-  border-bottom: 1px solid #f4f4f5;
+  border-bottom: 1px solid var(--sat-modal-header-border, #f4f4f5);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -400,7 +439,7 @@ export const MODAL_STYLES = `
 .sat-modal-title {
   font-size: 16px;
   font-weight: 600;
-  color: #09090b;
+  color: var(--sat-modal-text, #09090b);
   margin: 0;
   display: flex;
   align-items: center;
@@ -416,10 +455,10 @@ export const MODAL_STYLES = `
 .sat-maximize-btn {
   background: transparent;
   border: none;
-  color: #71717a;
+  color: var(--sat-modal-text-muted, #71717a);
   cursor: pointer;
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--sat-radius-sm, 6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -427,25 +466,26 @@ export const MODAL_STYLES = `
 }
 
 .sat-maximize-btn:hover {
-  background: #f4f4f5;
-  color: #18181b;
+  background: var(--sat-btn-hover, #f4f4f5);
+  color: var(--sat-modal-text, #18181b);
 }
 
 .sat-close-btn {
   background: transparent;
   border: none;
-  color: #71717a;
+  color: var(--sat-modal-text-muted, #71717a);
   cursor: pointer;
   padding: 4px;
-  border-radius: 6px;
+  border-radius: var(--sat-radius-sm, 6px);
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.15s;
 }
 
 .sat-close-btn:hover {
-  background: #f4f4f5;
-  color: #18181b;
+  background: var(--sat-btn-hover, #f4f4f5);
+  color: var(--sat-modal-text, #18181b);
 }
 
 .sat-modal-body {
@@ -533,10 +573,10 @@ export const MODAL_STYLES = `
 }
 
 .sat-dom-btn {
-  background: #2563eb;
-  color: #ffffff;
+  background: var(--sat-primary, #2563eb);
+  color: var(--sat-primary-contrast, #ffffff);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--sat-radius-sm, 6px);
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 600;
@@ -546,7 +586,7 @@ export const MODAL_STYLES = `
 }
 
 .sat-dom-btn:hover {
-  background: #1d4ed8;
+  background: var(--sat-primary-hover, #1d4ed8);
 }
 
 .sat-scrubber-track-wrap {
@@ -558,7 +598,7 @@ export const MODAL_STYLES = `
 
 .sat-dom-scrubber {
   width: 100%;
-  accent-color: #3b82f6;
+  accent-color: var(--sat-primary, #3b82f6);
   cursor: pointer;
   height: 5px;
   position: relative;
@@ -594,12 +634,12 @@ export const MODAL_STYLES = `
 }
 
 .sat-marker-error {
-  background-color: #ef4444;
+  background-color: var(--sat-danger-border, #ef4444);
   box-shadow: 0 0 0 1.5px rgba(17, 24, 39, 0.9), 0 0 5px #ef4444;
 }
 
 .sat-marker-warn {
-  background-color: #f59e0b;
+  background-color: var(--sat-warning, #f59e0b);
   box-shadow: 0 0 0 1.5px rgba(17, 24, 39, 0.9), 0 0 5px #f59e0b;
 }
 
@@ -616,9 +656,9 @@ export const MODAL_STYLES = `
   background: #09090b;
   color: #f4f4f5;
   font-size: 11px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--sat-font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--sat-radius-sm, 4px);
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
@@ -641,7 +681,7 @@ export const MODAL_STYLES = `
   gap: 12px;
   padding: 8px 14px;
   background: #111827;
-  border-radius: 8px;
+  border-radius: var(--sat-radius-md, 8px);
   margin-top: -6px;
 }
 
@@ -660,7 +700,7 @@ export const MODAL_STYLES = `
   top: 0;
   bottom: 0;
   width: 0%;
-  background: #3b82f6;
+  background: var(--sat-primary, #3b82f6);
   border-radius: 3px;
   pointer-events: none;
 }
@@ -929,10 +969,10 @@ export const MODAL_STYLES = `
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  background: #f8fafc;
+  background: var(--sat-modal-card-bg, #f8fafc);
   padding: 12px 16px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  border-radius: var(--sat-radius-md, 10px);
+  border: 1px solid var(--sat-modal-card-border, #e2e8f0);
 }
 
 .sat-meta-item {
@@ -942,7 +982,7 @@ export const MODAL_STYLES = `
 
 .sat-meta-label {
   font-size: 11px;
-  color: #64748b;
+  color: var(--sat-modal-text-muted, #64748b);
   text-transform: uppercase;
   font-weight: 500;
 }
@@ -950,16 +990,16 @@ export const MODAL_STYLES = `
 .sat-meta-value {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--sat-modal-text, #0f172a);
 }
 
 .sat-modal-footer {
   padding: 14px 20px;
-  border-top: 1px solid #f4f4f5;
+  border-top: 1px solid var(--sat-modal-header-border, #f4f4f5);
   display: flex;
   flex-direction: column;
   gap: 10px;
-  background: #fafafa;
+  background: var(--sat-modal-footer-bg, #fafafa);
 }
 
 .sat-modal-footer-actions {
@@ -975,9 +1015,9 @@ export const MODAL_STYLES = `
   flex-direction: column;
   gap: 6px;
   width: 100%;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  background: var(--sat-modal-card-bg, #f1f5f9);
+  border: 1px solid var(--sat-modal-card-border, #e2e8f0);
+  border-radius: var(--sat-radius-md, 8px);
   padding: 8px 12px;
   font-size: 12px;
   animation: sat-fade-in 0.2s ease-out;
@@ -988,7 +1028,7 @@ export const MODAL_STYLES = `
   align-items: center;
   justify-content: space-between;
   font-weight: 500;
-  color: #334155;
+  color: var(--sat-modal-text, #334155);
 }
 
 .sat-upload-progress-track {
@@ -1001,14 +1041,14 @@ export const MODAL_STYLES = `
 
 .sat-upload-progress-fill {
   height: 100%;
-  background: #2563eb;
+  background: var(--sat-primary, #2563eb);
   border-radius: 3px;
   width: 0%;
   transition: width 0.15s ease-out, background-color 0.2s ease;
 }
 
 .sat-upload-progress-fill.is-complete {
-  background: #10b981;
+  background: var(--sat-success, #10b981);
 }
 
 .sat-upload-feedback {
@@ -1019,12 +1059,12 @@ export const MODAL_STYLES = `
 }
 
 .sat-upload-error-msg {
-  color: #ef4444;
+  color: var(--sat-danger-border, #ef4444);
   font-weight: 500;
 }
 
 .sat-upload-success-link {
-  color: #2563eb;
+  color: var(--sat-primary, #2563eb);
   text-decoration: underline;
   font-weight: 600;
   display: inline-flex;
@@ -1035,7 +1075,7 @@ export const MODAL_STYLES = `
 .sat-upload-copy-btn {
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  border-radius: 4px;
+  border-radius: var(--sat-radius-sm, 4px);
   padding: 2px 6px;
   font-size: 10px;
   color: #475569;
@@ -1049,7 +1089,7 @@ export const MODAL_STYLES = `
 
 .sat-action-btn {
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--sat-radius-md, 8px);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -1061,33 +1101,124 @@ export const MODAL_STYLES = `
 }
 
 .sat-action-btn-secondary {
-  background: #ffffff;
-  border: 1px solid #e4e4e7;
-  color: #27272a;
+  background: var(--sat-modal-btn-sec-bg, #ffffff);
+  border: 1px solid var(--sat-modal-btn-sec-border, #e4e4e7);
+  color: var(--sat-modal-btn-sec-text, #27272a);
 }
 
 .sat-action-btn-secondary:hover {
-  background: #f4f4f5;
+  background: var(--sat-modal-btn-sec-hover, #f4f4f5);
 }
 
 .sat-action-btn-primary {
-  background: #2563eb;
-  border: 1px solid #1d4ed8;
-  color: #ffffff;
+  background: var(--sat-primary, #2563eb);
+  border: 1px solid var(--sat-primary-hover, #1d4ed8);
+  color: var(--sat-primary-contrast, #ffffff);
 }
 
 .sat-action-btn-primary:hover {
-  background: #1d4ed8;
+  background: var(--sat-primary-hover, #1d4ed8);
+}
+
+/* Dark mode overrides for modal dialog */
+:host([data-theme="dark"]) .sat-modal-dialog,
+:host(.sat-theme-dark) .sat-modal-dialog {
+  background: var(--sat-modal-bg, #18181b);
+  color: var(--sat-modal-text, #f4f4f5);
+  border: 1px solid var(--sat-border, rgba(255, 255, 255, 0.12));
+}
+
+:host([data-theme="dark"]) .sat-modal-header,
+:host(.sat-theme-dark) .sat-modal-header {
+  border-bottom: 1px solid var(--sat-modal-header-border, #27272a);
+}
+
+:host([data-theme="dark"]) .sat-modal-title,
+:host(.sat-theme-dark) .sat-modal-title {
+  color: var(--sat-modal-text, #f4f4f5);
+}
+
+:host([data-theme="dark"]) .sat-maximize-btn,
+:host([data-theme="dark"]) .sat-close-btn,
+:host(.sat-theme-dark) .sat-maximize-btn,
+:host(.sat-theme-dark) .sat-close-btn {
+  color: var(--sat-modal-text-muted, #a1a1aa);
+}
+
+:host([data-theme="dark"]) .sat-maximize-btn:hover,
+:host([data-theme="dark"]) .sat-close-btn:hover,
+:host(.sat-theme-dark) .sat-maximize-btn:hover,
+:host(.sat-theme-dark) .sat-close-btn:hover {
+  background: var(--sat-btn-hover, #27272a);
+  color: var(--sat-modal-text, #ffffff);
+}
+
+:host([data-theme="dark"]) .sat-meta-grid,
+:host(.sat-theme-dark) .sat-meta-grid {
+  background: var(--sat-modal-card-bg, #27272a);
+  border-color: var(--sat-modal-card-border, #3f3f46);
+}
+
+:host([data-theme="dark"]) .sat-meta-label,
+:host(.sat-theme-dark) .sat-meta-label {
+  color: var(--sat-modal-text-muted, #a1a1aa);
+}
+
+:host([data-theme="dark"]) .sat-meta-value,
+:host(.sat-theme-dark) .sat-meta-value {
+  color: var(--sat-modal-text, #f4f4f5);
+}
+
+:host([data-theme="dark"]) .sat-modal-footer,
+:host(.sat-theme-dark) .sat-modal-footer {
+  background: var(--sat-modal-footer-bg, #141416);
+  border-top-color: var(--sat-modal-header-border, #27272a);
+}
+
+:host([data-theme="dark"]) .sat-action-btn-secondary,
+:host(.sat-theme-dark) .sat-action-btn-secondary {
+  background: var(--sat-modal-btn-sec-bg, #27272a);
+  border-color: var(--sat-modal-btn-sec-border, #3f3f46);
+  color: var(--sat-modal-btn-sec-text, #f4f4f5);
+}
+
+:host([data-theme="dark"]) .sat-action-btn-secondary:hover,
+:host(.sat-theme-dark) .sat-action-btn-secondary:hover {
+  background: var(--sat-modal-btn-sec-hover, #3f3f46);
+}
+
+:host([data-theme="dark"]) .sat-upload-progress-container,
+:host(.sat-theme-dark) .sat-upload-progress-container {
+  background: var(--sat-modal-card-bg, #27272a);
+  border-color: var(--sat-modal-card-border, #3f3f46);
+}
+
+:host([data-theme="dark"]) .sat-upload-status-text,
+:host(.sat-theme-dark) .sat-upload-status-text {
+  color: var(--sat-modal-text, #e4e4e7);
+}
+
+:host([data-theme="dark"]) .sat-upload-copy-btn,
+:host(.sat-theme-dark) .sat-upload-copy-btn {
+  background: #18181b;
+  border-color: #3f3f46;
+  color: #a1a1aa;
+}
+
+:host([data-theme="dark"]) .sat-upload-copy-btn:hover,
+:host(.sat-theme-dark) .sat-upload-copy-btn:hover {
+  background: #27272a;
+  color: #f4f4f5;
 }
 `;
 
 export const BANNER_STYLES = `
 :host {
   all: initial;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--sat-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
   font-size: 13px;
   line-height: 1.4;
-  color: #ffffff;
+  color: var(--sat-text, #ffffff);
   z-index: 2147483647;
   position: fixed;
   top: 20px;
@@ -1100,14 +1231,14 @@ export const BANNER_STYLES = `
 }
 
 .sat-banner {
-  background: #18181b;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 12px;
+  background: var(--sat-bg-solid, #18181b);
+  border: 1px solid var(--sat-border, rgba(255, 255, 255, 0.15));
+  border-radius: var(--sat-radius-md, 12px);
   padding: 12px 18px;
   display: flex;
   align-items: center;
   gap: 14px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--sat-shadow, 0 10px 25px -5px rgba(0, 0, 0, 0.4));
   animation: sat-slide-down 0.3s ease-out;
   max-width: 90vw;
 }
@@ -1124,12 +1255,12 @@ export const BANNER_STYLES = `
 
 .sat-banner-title {
   font-weight: 600;
-  color: #ffffff;
+  color: var(--sat-text, #ffffff);
 }
 
 .sat-banner-desc {
   font-size: 12px;
-  color: #a1a1aa;
+  color: var(--sat-text-muted, #a1a1aa);
 }
 
 .sat-banner-actions {
@@ -1140,7 +1271,7 @@ export const BANNER_STYLES = `
 
 .sat-banner-btn {
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--sat-radius-sm, 6px);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -1149,22 +1280,52 @@ export const BANNER_STYLES = `
 }
 
 .sat-banner-btn-recover {
-  background: #2563eb;
-  border: 1px solid #3b82f6;
-  color: #ffffff;
+  background: var(--sat-primary, #2563eb);
+  border: 1px solid var(--sat-primary-hover, #3b82f6);
+  color: var(--sat-primary-contrast, #ffffff);
 }
 
 .sat-banner-btn-recover:hover {
-  background: #1d4ed8;
+  background: var(--sat-primary-hover, #1d4ed8);
 }
 
 .sat-banner-btn-discard {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #d4d4d8;
+  background: var(--sat-btn-bg, rgba(255, 255, 255, 0.1));
+  border: 1px solid var(--sat-btn-border, rgba(255, 255, 255, 0.1));
+  color: var(--sat-text-secondary, #d4d4d8);
 }
 
 .sat-banner-btn-discard:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--sat-btn-hover, rgba(255, 255, 255, 0.2));
+}
+
+/* Light mode overrides for recovery banner */
+:host([data-theme="light"]) .sat-banner,
+:host(.sat-theme-light) .sat-banner {
+  background: var(--sat-bg-solid, #ffffff);
+  border-color: var(--sat-border, rgba(0, 0, 0, 0.15));
+  box-shadow: var(--sat-shadow, 0 10px 25px -5px rgba(0, 0, 0, 0.15));
+}
+
+:host([data-theme="light"]) .sat-banner-title,
+:host(.sat-theme-light) .sat-banner-title {
+  color: var(--sat-text, #09090b);
+}
+
+:host([data-theme="light"]) .sat-banner-desc,
+:host(.sat-theme-light) .sat-banner-desc {
+  color: var(--sat-text-muted, #71717a);
+}
+
+:host([data-theme="light"]) .sat-banner-btn-discard,
+:host(.sat-theme-light) .sat-banner-btn-discard {
+  background: var(--sat-btn-bg, rgba(0, 0, 0, 0.05));
+  border-color: var(--sat-btn-border, rgba(0, 0, 0, 0.1));
+  color: var(--sat-text, #27272a);
+}
+
+:host([data-theme="light"]) .sat-banner-btn-discard:hover,
+:host(.sat-theme-light) .sat-banner-btn-discard:hover {
+  background: var(--sat-btn-hover, rgba(0, 0, 0, 0.1));
 }
 `;

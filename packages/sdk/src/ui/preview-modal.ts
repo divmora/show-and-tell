@@ -3,11 +3,13 @@ import {
   RecordingResult, 
   UploadConfig, 
   PresignedUploadConfig, 
-  ServerUploadConfig 
+  ServerUploadConfig,
+  ThemeConfig
 } from '../types';
 import { formatBytes, formatDuration } from '../utils/time';
 import { MODAL_STYLES } from './styles';
 import { DomReplayer } from '../dom/replayer';
+import { applyThemeToHost } from './theme';
 
 function escapeHtml(str: string): string {
   return str
@@ -24,8 +26,22 @@ export class PreviewModal {
   private onFsChange?: () => void;
   private uploadConfig?: string | UploadConfig;
 
-  constructor(private result: RecordingResult, uploadTarget?: string | UploadConfig) {
+  constructor(
+    private result: RecordingResult,
+    uploadTarget?: string | UploadConfig,
+    private theme?: ThemeConfig
+  ) {
     this.uploadConfig = uploadTarget;
+  }
+
+  /**
+   * Dynamically updates the preview modal's visual theme tokens and color mode.
+   */
+  public setTheme(theme: ThemeConfig): void {
+    this.theme = theme;
+    if (this.hostElement) {
+      applyThemeToHost(this.hostElement, this.theme);
+    }
   }
 
   private get hasUpload(): boolean {
@@ -40,6 +56,7 @@ export class PreviewModal {
     if (typeof document === 'undefined') return;
 
     this.hostElement = document.createElement('show-and-tell-modal');
+    applyThemeToHost(this.hostElement, this.theme);
     this.shadowRoot = this.hostElement.attachShadow({ mode: 'open' });
 
     const styleEl = document.createElement('style');
@@ -535,7 +552,7 @@ export class PreviewModal {
         document.addEventListener('fullscreenchange', this.onFsChange);
 
         // Attempt autoplay
-        videoEl.play().catch(() => {
+        videoEl.play()?.catch(() => {
           if (videoPlayBtn) videoPlayBtn.textContent = 'Play';
         });
       }

@@ -153,6 +153,7 @@ function CustomRecorder() {
 | `countdown` | `number \| boolean \| CountdownConfig` | `3` | Pre-recording countdown overlay (`3`, `2`, `1`, `Go!`) with audio tick chimes, "Start Now" skip button, and "Cancel" button. Set to `0` or `false` to disable. |
 | `audioMeter` | `boolean \| AudioMeterConfig` | `true` | Real-time 3-segment microphone VU level meter and silent microphone warning alert when mic is unmuted but silent for >5 seconds. |
 | `cursorEffects` | `boolean \| CursorEffectsConfig` | `true` | Cursor interaction feedback (click ripple animations and toggleable cursor spotlight). |
+| `theme` | `ThemeConfig` | `undefined` | Custom theme tokens and white-label styling (`mode`, `primaryColor`, `borderRadius`, `fontFamily`, `cssVariables`). Injected via `--sat-*` CSS custom properties into isolated Shadow DOM roots and Document PiP. |
 | `filename` | `string` | `'recording'` | Default base filename for the exported recording file. |
 | `uploadEndpoint` | `string` | `undefined` | Optional server URL to enable 1-click video upload in preview modal. |
 
@@ -244,6 +245,74 @@ ShowAndTell includes rich video-player-like zoom and viewport controls:
 - **Auto-Follow Virtual Cursor**: When zoomed in, the viewport smoothly auto-centers and pans to follow the user's recorded mouse movements and clicks in real time.
 - **Grab-to-Pan (Interactive Navigation)**: Click and drag anywhere on the player surface with a natural `grab` / `grabbing` hand cursor to inspect any part of the page.
 - **Modal Maximize (`⛶`) & Fullscreen Mode**: Expand the replay modal to 96vw × 94vh or take the player into true fullscreen with 1 click for detailed inspection.
+
+---
+
+## 🎨 Custom Theming & White-Label Styling
+
+ShowAndTell provides a first-class theming engine designed for white-label embedding. Because all SDK widgets (the floating toolbar, preview modal, countdown overlay, recovery banner, camera bubble, and Document Picture-in-Picture window) are encapsulated within isolated **Shadow DOM**, host application styles do not conflict with SDK components.
+
+CSS custom properties inherit across Shadow DOM boundaries, allowing seamless styling via JavaScript configuration or standard stylesheet declarations.
+
+### 1. JavaScript Configuration
+
+Pass a `theme` object directly to `ShowAndTell.startRecording()` or `ShowAndTell.init()`:
+
+```typescript
+const session = await ShowAndTell.startRecording({
+  theme: {
+    mode: 'light', // 'dark' | 'light' | 'auto' (system preference)
+    primaryColor: '#6366f1', // Brand accent color (buttons, progress bars, active states)
+    primaryHoverColor: '#4f46e5',
+    primaryContrastColor: '#ffffff',
+    fontFamily: 'Inter, system-ui, sans-serif',
+    borderRadius: '16px', // Pill / modern rounded corners
+    surfaceColor: '#ffffff',
+    backgroundColor: '#f8fafc',
+    textColor: '#0f172a',
+    borderColor: '#e2e8f0',
+    cssVariables: {
+      '--sat-shadow': '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+    }
+  }
+});
+```
+
+### 2. Runtime Theme Switching
+
+Update the theme dynamically without restarting the recording session:
+
+```typescript
+// Core SDK:
+ShowAndTell.setTheme({ mode: 'light', primaryColor: '#10b981' });
+
+// In React:
+const { setTheme } = useShowAndTell();
+setTheme({ mode: 'dark', primaryColor: '#8b5cf6' });
+
+// Or on React components:
+<ShowAndTellWidget theme={{ mode: 'light', primaryColor: '#ec4899' }} />
+<ShowAndTellButton theme={{ mode: 'dark', primaryColor: '#f59e0b' }} />
+```
+
+### 3. CSS Variable Tokens (`--sat-*`)
+
+You can also style ShowAndTell directly from your application's global stylesheet by targeting `:root`:
+
+```css
+:root {
+  --sat-primary: #3b82f6;
+  --sat-primary-hover: #2563eb;
+  --sat-primary-contrast: #ffffff;
+  --sat-bg: #0f172a;
+  --sat-surface: #1e293b;
+  --sat-text: #f8fafc;
+  --sat-text-muted: #94a3b8;
+  --sat-border: rgba(255, 255, 255, 0.12);
+  --sat-radius: 12px;
+  --sat-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+```
 
 ---
 

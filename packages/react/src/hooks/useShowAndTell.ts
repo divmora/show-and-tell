@@ -6,7 +6,8 @@ import {
   type RecordingState,
   type DurationStats,
   type ShowAndTellConfig,
-  type AudioLevelData
+  type AudioLevelData,
+  type ThemeConfig
 } from 'show-and-tell';
 import type { UseShowAndTellOptions, UseShowAndTellReturn } from '../types';
 
@@ -261,6 +262,16 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     }
   }, []);
 
+  const setTheme = useCallback((theme: ThemeConfig) => {
+    ShowAndTell.setTheme(theme);
+  }, []);
+
+  useEffect(() => {
+    if (options.theme) {
+      ShowAndTell.setTheme(options.theme);
+    }
+  }, [options.theme]);
+
   // Cleanup on unmount if requested
   useEffect(() => {
     return () => {
@@ -297,6 +308,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     toggleSpotlight,
     setSpotlight,
     triggerClickRipple,
+    setTheme,
     clearError
   };
 }

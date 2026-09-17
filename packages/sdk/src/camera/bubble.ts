@@ -1,4 +1,5 @@
-import { CameraConfig } from '../types';
+import { CameraConfig, ThemeConfig } from '../types';
+import { applyThemeToHost } from '../ui/theme';
 
 export class CameraBubble {
   private hostElement?: HTMLElement;
@@ -23,7 +24,11 @@ export class CameraBubble {
     }
   }
 
-  constructor(private stream: MediaStream, config: CameraConfig = {}) {
+  constructor(
+    private stream: MediaStream,
+    config: CameraConfig = {},
+    private theme?: ThemeConfig
+  ) {
     this.shape = config.shape || 'circle';
     this.size = config.size || 160;
     this.position = config.position || 'bottom-left';
@@ -35,13 +40,14 @@ export class CameraBubble {
     if (typeof document === 'undefined') return;
 
     this.hostElement = document.createElement('show-and-tell-camera');
+    applyThemeToHost(this.hostElement, this.theme);
     this.shadowRoot = this.hostElement.attachShadow({ mode: 'open' });
 
     const style = document.createElement('style');
     style.textContent = `
       :host {
         all: initial;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-family: var(--sat-font-family, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif);
         font-size: 12px;
         color: #ffffff;
         z-index: 2147483646;
@@ -362,6 +368,13 @@ export class CameraBubble {
   hide(): void {
     if (this.hostElement) {
       this.hostElement.style.display = 'none';
+    }
+  }
+
+  setTheme(theme: ThemeConfig): void {
+    this.theme = theme;
+    if (this.hostElement) {
+      applyThemeToHost(this.hostElement, theme);
     }
   }
 

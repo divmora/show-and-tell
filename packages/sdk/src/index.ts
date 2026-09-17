@@ -8,7 +8,8 @@ import type {
   PresignedUploadContext,
   PresignedUploadResult,
   RecordingMode,
-  RequestedRecordingMode
+  RequestedRecordingMode,
+  ThemeConfig
 } from './types';
 import { recorderEngine, RecorderEngine } from './core/recorder';
 import { storage } from './storage/indexeddb';
@@ -32,6 +33,14 @@ export { PipController } from './ui/pip-controller';
 export { CursorEffectsManager } from './ui/cursor-effects';
 export { CountdownOverlay } from './ui/countdown';
 export { uploadRecordingAssets, uploadBlobToPresignedTarget } from './utils/uploader';
+export {
+  THEME_CSS_VARS,
+  resolveThemeMode,
+  resolveThemeVariables,
+  applyThemeToHost,
+  DEFAULT_DARK_TOKENS,
+  DEFAULT_LIGHT_TOKENS
+} from './ui/theme';
 
 /**
  * Main ShowAndTell SDK object.
@@ -70,6 +79,13 @@ export const ShowAndTell = {
    */
   getActiveSession(): RecordingSession | undefined {
     return recorderEngine.getActiveSession();
+  },
+
+  /**
+   * Dynamically updates the active visual theme tokens and mode.
+   */
+  setTheme(theme: ThemeConfig): void {
+    recorderEngine.setTheme(theme);
   },
 
   /**
@@ -272,8 +288,12 @@ export const ShowAndTell = {
   /**
    * Initializes SDK and checks for interrupted recordings from previous reloads.
    */
-  async init(config: { onReloadRecovery?: 'banner' | 'auto-download' | 'custom' | 'none' } = {}): Promise<void> {
+  async init(config: { onReloadRecovery?: 'banner' | 'auto-download' | 'custom' | 'none'; theme?: ThemeConfig } = {}): Promise<void> {
     if (typeof window === 'undefined') return;
+
+    if (config.theme) {
+      this.setTheme(config.theme);
+    }
 
     const recoveryMode = config.onReloadRecovery ?? 'banner';
     if (recoveryMode === 'none') return;
@@ -284,7 +304,7 @@ export const ShowAndTell = {
         const latest = recoverableList[recoverableList.length - 1];
 
         if (recoveryMode === 'banner') {
-          const banner = new RecoveryBanner(latest);
+          const banner = new RecoveryBanner(latest, config.theme);
           banner.mount();
         } else if (recoveryMode === 'auto-download') {
           const res = await latest.assemble();

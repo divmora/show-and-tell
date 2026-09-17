@@ -1,5 +1,6 @@
-import { DurationStats, RecordingSession } from '../types';
+import { DurationStats, RecordingSession, ThemeConfig } from '../types';
 import { WIDGET_STYLES } from './styles';
+import { applyThemeToHost } from './theme';
 
 const ICONS = {
   drag: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M9 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm10-18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>`,
@@ -39,12 +40,27 @@ export class RecordingWidget {
   private widgetStartX = 0;
   private widgetStartY = 0;
 
-  constructor(private session: RecordingSession, private hasMic: boolean = false) {}
+  constructor(
+    private session: RecordingSession,
+    private hasMic: boolean = false,
+    private theme?: ThemeConfig
+  ) {}
+
+  /**
+   * Dynamically updates the widget's visual theme tokens and color mode.
+   */
+  public setTheme(theme: ThemeConfig): void {
+    this.theme = theme;
+    if (this.hostElement) {
+      applyThemeToHost(this.hostElement, this.theme);
+    }
+  }
 
   mount(): void {
     if (typeof document === 'undefined') return;
 
     this.hostElement = document.createElement('show-and-tell-widget');
+    applyThemeToHost(this.hostElement, this.theme);
     this.shadowRoot = this.hostElement.attachShadow({ mode: 'open' });
 
     const styleEl = document.createElement('style');

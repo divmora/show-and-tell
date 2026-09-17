@@ -31,6 +31,22 @@ document.addEventListener('DOMContentLoaded', () => {
   const mobileNotice = document.getElementById('mobileNotice');
   const btnStartText = document.getElementById('btnStartText');
 
+  // Theme Customizer Elements
+  const themeModeSelect = document.getElementById('themeMode');
+  const themeBorderRadiusSelect = document.getElementById('themeBorderRadius');
+  const themePrimaryColorInput = document.getElementById('themePrimaryColor');
+  const btnApplyTheme = document.getElementById('btnApplyTheme');
+  const btnResetTheme = document.getElementById('btnResetTheme');
+  const themePresetButtons = document.querySelectorAll('.btn-theme-preset');
+
+  function getSelectedTheme() {
+    return {
+      mode: themeModeSelect?.value || 'dark',
+      borderRadius: themeBorderRadiusSelect?.value || '12px',
+      primaryColor: themePrimaryColorInput?.value || '#3b82f6'
+    };
+  }
+
   const embedCodeSnippet = document.getElementById('embedCodeSnippet');
   const snippetModeBadge = document.getElementById('snippetModeBadge');
   const btnCopySnippet = document.getElementById('btnCopySnippet');
@@ -188,6 +204,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (uploadMode === 'server') {
       code += `  uploadEndpoint: '/api/upload', // Traditional multipart server upload\n`;
     }
+
+    const theme = getSelectedTheme();
+    if (theme.mode !== 'dark' || theme.primaryColor !== '#3b82f6' || theme.borderRadius !== '12px') {
+      code += `  theme: {\n    mode: '${theme.mode}',\n    primaryColor: '${theme.primaryColor}',\n    borderRadius: '${theme.borderRadius}'\n  },\n`;
+    }
+
     code += `});\n\n`;
 
     code += `// 3. Listen to session lifecycle events\n`;
@@ -330,15 +352,56 @@ document.addEventListener('DOMContentLoaded', () => {
     previewModalCheckbox,
     storagePersistenceCheckbox,
     domMaskInputs,
-    uploadModeSelect
+    uploadModeSelect,
+    themeModeSelect,
+    themeBorderRadiusSelect,
+    themePrimaryColorInput
   ];
 
   snippetTriggerElements.forEach((el) => {
     if (!el) return;
     el.addEventListener('change', updateCodeSnippet);
-    if (el.tagName === 'INPUT' && (el.type === 'number' || el.type === 'text')) {
+    if (el.tagName === 'INPUT' && (el.type === 'number' || el.type === 'text' || el.type === 'color')) {
       el.addEventListener('input', updateCodeSnippet);
     }
+  });
+
+  // Theme preset buttons & live controls
+  themePresetButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const color = btn.getAttribute('data-color');
+      if (color && themePrimaryColorInput) {
+        themePrimaryColorInput.value = color;
+        updateCodeSnippet();
+        if (window.ShowAndTell?.setTheme) {
+          window.ShowAndTell.setTheme(getSelectedTheme());
+        }
+      }
+    });
+  });
+
+  btnApplyTheme?.addEventListener('click', () => {
+    if (window.ShowAndTell?.setTheme) {
+      window.ShowAndTell.setTheme(getSelectedTheme());
+    }
+  });
+
+  btnResetTheme?.addEventListener('click', () => {
+    if (themeModeSelect) themeModeSelect.value = 'dark';
+    if (themeBorderRadiusSelect) themeBorderRadiusSelect.value = '12px';
+    if (themePrimaryColorInput) themePrimaryColorInput.value = '#3b82f6';
+    updateCodeSnippet();
+    if (window.ShowAndTell?.setTheme) {
+      window.ShowAndTell.setTheme(getSelectedTheme());
+    }
+  });
+
+  [themeModeSelect, themeBorderRadiusSelect, themePrimaryColorInput].forEach((el) => {
+    el?.addEventListener('input', () => {
+      if (window.ShowAndTell?.setTheme) {
+        window.ShowAndTell.setTheme(getSelectedTheme());
+      }
+    });
   });
 
   recordingModeSelect?.addEventListener('change', updateModeUi);
@@ -434,6 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ui: floatingUiCheckbox.checked,
         previewModal: previewModalCheckbox.checked,
         storage: storagePersistenceCheckbox.checked,
+        theme: getSelectedTheme(),
         upload: uploadConfig,
         uploadEndpoint: uploadEndpoint
       });

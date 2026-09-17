@@ -5,6 +5,7 @@ import type { ShowAndTellWidgetProps, UseShowAndTellReturn } from '../types';
 
 export const ShowAndTellWidget: React.FC<ShowAndTellWidgetProps> = ({
   config,
+  theme,
   onStart,
   onStop,
   onError,
@@ -14,15 +15,17 @@ export const ShowAndTellWidget: React.FC<ShowAndTellWidgetProps> = ({
   children
 }) => {
   const context = useContext(ShowAndTellContext);
+  const effectiveTheme = theme || config?.theme;
   const localRecording = useShowAndTell({
     ...config,
+    ...(effectiveTheme ? { theme: effectiveTheme } : {}),
     onStart,
     onStop,
     onError
   });
 
   const recording: UseShowAndTellReturn =
-    context && !config && !onStart && !onStop && !onError ? context : localRecording;
+    context && !config && !theme && !onStart && !onStop && !onError ? context : localRecording;
 
   const {
     state,
@@ -63,19 +66,27 @@ export const ShowAndTellWidget: React.FC<ShowAndTellWidgetProps> = ({
   }
 
   // Default integrated floating / inline widget card
+  const isLight = effectiveTheme?.mode === 'light';
   const containerStyle: React.CSSProperties = {
     display: 'inline-flex',
     flexDirection: 'column',
     gap: '10px',
     padding: '14px 18px',
-    borderRadius: '12px',
-    backgroundColor: '#0f172a',
-    color: '#f8fafc',
+    borderRadius: effectiveTheme?.borderRadius || '12px',
+    backgroundColor: effectiveTheme?.surfaceColor || effectiveTheme?.backgroundColor || (isLight ? '#ffffff' : '#0f172a'),
+    color: effectiveTheme?.textColor || (isLight ? '#0f172a' : '#f8fafc'),
     fontFamily:
+      effectiveTheme?.fontFamily ||
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     fontSize: '14px',
-    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: isLight
+      ? '0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04)'
+      : '0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
+    border: effectiveTheme?.borderColor
+      ? `1px solid ${effectiveTheme.borderColor}`
+      : isLight
+      ? '1px solid #e2e8f0'
+      : '1px solid rgba(255, 255, 255, 0.1)',
     minWidth: '240px',
     ...style
   };
@@ -160,7 +171,12 @@ export const ShowAndTellWidget: React.FC<ShowAndTellWidgetProps> = ({
         {state === 'idle' || state === 'stopped' || state === 'error' ? (
           <button
             type="button"
-            style={{ ...btnStyle, backgroundColor: '#3b82f6', color: '#ffffff', flex: 1 }}
+            style={{
+              ...btnStyle,
+              backgroundColor: effectiveTheme?.primaryColor || '#3b82f6',
+              color: effectiveTheme?.primaryContrastColor || '#ffffff',
+              flex: 1
+            }}
             onClick={() => startRecording()}
           >
             Start Recording
@@ -170,7 +186,11 @@ export const ShowAndTellWidget: React.FC<ShowAndTellWidgetProps> = ({
             {isRecording ? (
               <button
                 type="button"
-                style={{ ...btnStyle, backgroundColor: '#334155', color: '#f8fafc' }}
+                style={{
+                  ...btnStyle,
+                  backgroundColor: isLight ? '#e2e8f0' : '#334155',
+                  color: isLight ? '#0f172a' : '#f8fafc'
+                }}
                 onClick={pauseRecording}
               >
                 Pause
@@ -178,7 +198,11 @@ export const ShowAndTellWidget: React.FC<ShowAndTellWidgetProps> = ({
             ) : (
               <button
                 type="button"
-                style={{ ...btnStyle, backgroundColor: '#334155', color: '#f8fafc' }}
+                style={{
+                  ...btnStyle,
+                  backgroundColor: isLight ? '#e2e8f0' : '#334155',
+                  color: isLight ? '#0f172a' : '#f8fafc'
+                }}
                 onClick={resumeRecording}
               >
                 Resume

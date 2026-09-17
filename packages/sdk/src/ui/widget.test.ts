@@ -144,4 +144,48 @@ describe('RecordingWidget Audio Meter & VU Meter', () => {
 
     widget.destroy();
   });
+
+  describe('Theming & White-Label Customization', () => {
+    it('applies theme configuration and CSS variables to host on mount', () => {
+      const session = createMockSession();
+      const widget = new RecordingWidget(session as any, false, {
+        mode: 'light',
+        primaryColor: '#8b5cf6',
+        borderRadius: '16px',
+        fontFamily: 'Inter, sans-serif'
+      });
+      widget.mount();
+
+      const host = document.querySelector('show-and-tell-widget') as HTMLElement;
+      expect(host).not.toBeNull();
+      expect(host.getAttribute('data-theme')).toBe('light');
+      expect(host.classList.contains('sat-theme-light')).toBe(true);
+      expect(host.style.getPropertyValue('--sat-primary')).toBe('#8b5cf6');
+      expect(host.style.getPropertyValue('--sat-radius')).toBe('16px');
+      expect(host.style.getPropertyValue('--sat-font-family')).toBe('Inter, sans-serif');
+
+      widget.destroy();
+    });
+
+    it('dynamically updates theme using setTheme()', () => {
+      const session = createMockSession();
+      const widget = new RecordingWidget(session as any, false, { mode: 'dark' });
+      widget.mount();
+
+      const host = document.querySelector('show-and-tell-widget') as HTMLElement;
+      expect(host.getAttribute('data-theme')).toBe('dark');
+
+      widget.setTheme({
+        mode: 'light',
+        primaryColor: '#10b981'
+      });
+
+      expect(host.getAttribute('data-theme')).toBe('light');
+      expect(host.classList.contains('sat-theme-light')).toBe(true);
+      expect(host.classList.contains('sat-theme-dark')).toBe(false);
+      expect(host.style.getPropertyValue('--sat-primary')).toBe('#10b981');
+
+      widget.destroy();
+    });
+  });
 });
