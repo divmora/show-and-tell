@@ -26,7 +26,7 @@
 - **Pause-Aware Time Tracking**: High-resolution precision timer (`performance.now()`) that pauses and resumes without penalizing user recording time.
 - **Browser Reload & Navigation Resilience**: Buffers 1-second timeslices into `IndexedDB`. If the user refreshes or navigates away, the pre-reload recording can be recovered with 1 click.
 - **Isolated Floating UI Widget**: Draggable on-screen recording toolbar embedded in Shadow DOM with inlined CSS (zero CSS collisions with Tailwind, Bootstrap, etc.).
-- **Post-Recording Preview Modal**: Built-in video player & DOM session replayer with scrubber, speed controls (0.5x, 1x, 2x), and instant export/upload.
+- **Post-Recording Preview Modal & Video Trimmer**: Built-in video player & DOM session replayer with scrubber, speed controls (0.5x, 1x, 2x), and integrated client-side `[In]` and `[Out]` trim handles for cutting unwanted beginnings or endings before download/upload.
 
 ---
 

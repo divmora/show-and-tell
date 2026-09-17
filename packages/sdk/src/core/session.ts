@@ -19,6 +19,7 @@ import { EventEmitter } from '../utils/event-emitter';
 import { getExtensionForMimeType } from '../utils/codecs';
 import { generateStandalonePlayerHtml } from '../dom/standalone-player';
 import { uploadRecordingAssets } from '../utils/uploader';
+import { trimRecordingResult } from '../editor/trimmer';
 
 export interface SessionInitOptions {
   id: string;
@@ -299,6 +300,9 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
         if (cameraUrl) {
           URL.revokeObjectURL(cameraUrl);
         }
+      },
+      trim: (inSeconds: number, outSeconds: number) => {
+        return trimRecordingResult(result, { inSeconds, outSeconds });
       }
     };
 

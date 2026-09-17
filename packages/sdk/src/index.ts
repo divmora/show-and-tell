@@ -20,6 +20,7 @@ import { uploadRecordingAssets } from './utils/uploader';
 
 export * from './types';
 export * from './dom';
+export * from './editor';
 export * from './diagnostics';
 export * from './camera';
 export { AudioMixer } from './core/audio-mixer';

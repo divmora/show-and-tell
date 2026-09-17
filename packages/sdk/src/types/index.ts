@@ -413,6 +413,19 @@ export interface RecordingResult {
   uploadPresigned: (config: PresignedUploadConfig) => Promise<PresignedUploadResult>;
   /** Revoke Blob object URL to free memory */
   revoke: () => void;
+  /** Optional trim range applied to this recording */
+  trimRange?: TrimRange;
+  /** Original untrimmed recording duration in seconds */
+  originalDuration?: number;
+  /** Trim this recording result to the specified in/out range in seconds */
+  trim?: (inSeconds: number, outSeconds: number) => Promise<RecordingResult>;
+}
+
+export interface TrimRange {
+  /** Start trim timestamp in seconds */
+  inSeconds: number;
+  /** End trim timestamp in seconds */
+  outSeconds: number;
 }
 
 export interface RecordingSession {

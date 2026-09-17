@@ -13,7 +13,7 @@ This document serves as the **living product roadmap** for ShowAndTell.
 - *(Active implementation tasks for global keyboard hotkeys [#15](https://github.com/divmora/show-and-tell/issues/15) are tracked directly in GitHub Issues)*
 
 ### ✏️ 2. Screen Annotations & Video Editing
-- *(Active implementation tasks for in-page telestrator drawing tools [#16](https://github.com/divmora/show-and-tell/issues/16) and post-recording video trimmer [#17](https://github.com/divmora/show-and-tell/issues/17) are tracked directly in GitHub Issues)*
+- *(Active implementation tasks for in-page telestrator drawing tools [#16](https://github.com/divmora/show-and-tell/issues/16) are tracked directly in GitHub Issues)*
 
 ### 🔍 3. Session Replay & Diagnostics
 - *(Active implementation tasks for skipping inactivity in session replay [#18](https://github.com/divmora/show-and-tell/issues/18) and HAR-lite network inspector [#19](https://github.com/divmora/show-and-tell/issues/19) are tracked directly in GitHub Issues)*

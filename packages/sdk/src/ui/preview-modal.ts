@@ -10,6 +10,7 @@ import { formatBytes, formatDuration } from '../utils/time';
 import { MODAL_STYLES } from './styles';
 import { DomReplayer } from '../dom/replayer';
 import { applyThemeToHost } from './theme';
+import { trimRecordingResult } from '../editor/trimmer';
 
 function escapeHtml(str: string): string {
   return str
@@ -25,6 +26,9 @@ export class PreviewModal {
   private domReplayer?: DomReplayer;
   private onFsChange?: () => void;
   private uploadConfig?: string | UploadConfig;
+  private inSeconds = 0;
+  private outSeconds = 0;
+  private isTrimActive = false;
 
   constructor(
     private result: RecordingResult,
@@ -69,7 +73,14 @@ export class PreviewModal {
     const warnCount = diagnostics.filter(e => e.level === 'warn').length;
     const netCount = diagnostics.filter(e => e.source === 'fetch' || e.source === 'xhr').length;
     const hasIssues = errorCount > 0 || warnCount > 0;
-    const totalDurationMs = Math.max(1000, this.result.duration * 1000);
+    const totalDuration = (this.result.duration && Number.isFinite(this.result.duration) && this.result.duration > 0)
+      ? this.result.duration
+      : 1;
+    const totalDurationMs = Math.max(1000, totalDuration * 1000);
+    this.inSeconds = 0;
+    this.outSeconds = totalDuration;
+    this.isTrimActive = false;
+    let isPlayingCut = false;
 
     const dialogWrapper = document.createElement('div');
     dialogWrapper.innerHTML = `
@@ -107,6 +118,37 @@ export class PreviewModal {
                 <button class="sat-dom-btn-secondary sat-dom-zoom-btn" id="domZoomBtn" title="Cycle Zoom (Fit / 100% / 150%)">🔍 Fit</button>
                 <button class="sat-dom-speed" id="domSpeedBtn">1x</button>
                 <button class="sat-dom-btn-secondary sat-dom-fs-btn" id="domFsBtn" title="Toggle Fullscreen">⛶ Fullscreen</button>
+                <button class="sat-dom-btn-secondary sat-trim-toggle-btn" id="domTrimBtn" title="Trim Video (Cut unwanted beginnings or endings)">✂️ Trim</button>
+              </div>
+
+              <!-- Collapsible DOM Trim Panel -->
+              <div class="sat-trim-panel" id="domTrimPanel" style="display: none;">
+                <div class="sat-trim-track-wrap">
+                  <div class="sat-trim-track" id="domTrimTrack">
+                    <div class="sat-trim-cut sat-trim-cut-left" id="domTrimCutLeft" style="width: 0%;"></div>
+                    <div class="sat-trim-highlight" id="domTrimHighlight" style="left: 0%; width: 100%;"></div>
+                    <div class="sat-trim-cut sat-trim-cut-right" id="domTrimCutRight" style="width: 0%;"></div>
+                    <div class="sat-trim-handle sat-trim-handle-in" id="domTrimHandleIn" style="left: 0%;" role="slider" aria-label="Start Trim Handle" tabindex="0">
+                      <div class="sat-trim-handle-badge" id="domTrimBadgeIn">00:00</div>
+                      <div class="sat-trim-handle-grip"></div>
+                    </div>
+                    <div class="sat-trim-handle sat-trim-handle-out" id="domTrimHandleOut" style="left: 100%;" role="slider" aria-label="End Trim Handle" tabindex="0">
+                      <div class="sat-trim-handle-badge" id="domTrimBadgeOut">${formatDuration(this.result.duration)}</div>
+                      <div class="sat-trim-handle-grip"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="sat-trim-footer-bar">
+                  <div class="sat-trim-stats">
+                    <span class="sat-trim-stat-pill">Original: <strong id="domTrimOrigDur">${formatDuration(this.result.duration)}</strong></span>
+                    <span class="sat-trim-stat-pill sat-trim-stat-active">Trimmed: <strong id="domTrimActiveDur">${formatDuration(this.result.duration)}</strong></span>
+                    <span class="sat-trim-cut-info" id="domTrimCutInfo">Full Duration (No Cuts)</span>
+                  </div>
+                  <div class="sat-trim-actions">
+                    <button type="button" class="sat-trim-act-btn" id="domTrimPreviewBtn" title="Preview trimmed section">▶ Preview Cut</button>
+                    <button type="button" class="sat-trim-act-btn" id="domTrimResetBtn" title="Reset handles">↺ Reset</button>
+                  </div>
+                </div>
               </div>
             </div>
           ` : `
@@ -126,6 +168,37 @@ export class PreviewModal {
                 </button>
                 <button class="sat-dom-speed" id="videoSpeedBtn">1x</button>
                 <button class="sat-dom-btn-secondary sat-dom-fs-btn" id="videoFsBtn" title="Toggle Fullscreen">⛶ Fullscreen</button>
+                <button class="sat-dom-btn-secondary sat-trim-toggle-btn" id="videoTrimBtn" title="Trim Video (Cut unwanted beginnings or endings)">✂️ Trim</button>
+              </div>
+
+              <!-- Collapsible Video Trim Panel -->
+              <div class="sat-trim-panel" id="videoTrimPanel" style="display: none;">
+                <div class="sat-trim-track-wrap">
+                  <div class="sat-trim-track" id="videoTrimTrack">
+                    <div class="sat-trim-cut sat-trim-cut-left" id="videoTrimCutLeft" style="width: 0%;"></div>
+                    <div class="sat-trim-highlight" id="videoTrimHighlight" style="left: 0%; width: 100%;"></div>
+                    <div class="sat-trim-cut sat-trim-cut-right" id="videoTrimCutRight" style="width: 0%;"></div>
+                    <div class="sat-trim-handle sat-trim-handle-in" id="videoTrimHandleIn" style="left: 0%;" role="slider" aria-label="Start Trim Handle" tabindex="0">
+                      <div class="sat-trim-handle-badge" id="videoTrimBadgeIn">00:00</div>
+                      <div class="sat-trim-handle-grip"></div>
+                    </div>
+                    <div class="sat-trim-handle sat-trim-handle-out" id="videoTrimHandleOut" style="left: 100%;" role="slider" aria-label="End Trim Handle" tabindex="0">
+                      <div class="sat-trim-handle-badge" id="videoTrimBadgeOut">${formatDuration(this.result.duration)}</div>
+                      <div class="sat-trim-handle-grip"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="sat-trim-footer-bar">
+                  <div class="sat-trim-stats">
+                    <span class="sat-trim-stat-pill">Original: <strong id="videoTrimOrigDur">${formatDuration(this.result.duration)}</strong></span>
+                    <span class="sat-trim-stat-pill sat-trim-stat-active">Trimmed: <strong id="videoTrimActiveDur">${formatDuration(this.result.duration)}</strong></span>
+                    <span class="sat-trim-cut-info" id="videoTrimCutInfo">Full Duration (No Cuts)</span>
+                  </div>
+                  <div class="sat-trim-actions">
+                    <button type="button" class="sat-trim-act-btn" id="videoTrimPreviewBtn" title="Preview trimmed section">▶ Preview Cut</button>
+                    <button type="button" class="sat-trim-act-btn" id="videoTrimResetBtn" title="Reset handles">↺ Reset</button>
+                  </div>
+                </div>
               </div>
             </div>
           `}
@@ -190,9 +263,12 @@ export class PreviewModal {
                 <span class="sat-upload-btn-label">${this.isPresigned ? 'Upload to Cloud' : 'Upload to Server'}</span>
               </button>
             ` : ''}
+            <button class="sat-action-btn sat-action-btn-secondary sat-btn-download-full" id="satDownloadFullBtn" style="display: none;">
+              Download Full (${formatDuration(this.result.duration)})
+            </button>
             <button class="sat-action-btn sat-action-btn-primary sat-btn-download">
               <svg style="width: 15px; height: 15px; fill: currentColor;" viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
-              ${isDom ? 'Download Replay (.html)' : 'Download Video'}
+              <span id="satDownloadBtnText">${isDom ? 'Download Replay (.html)' : 'Download Video'}</span>
             </button>
           </div>
         </div>
@@ -393,6 +469,13 @@ export class PreviewModal {
           container: surface,
           cameraUrl: this.result.cameraUrl,
           onTimeUpdate: (curMs, totalMs) => {
+            if (isPlayingCut && curMs >= this.outSeconds * 1000) {
+              this.domReplayer?.pause();
+              this.domReplayer?.seek(this.inSeconds * 1000);
+              isPlayingCut = false;
+              if (playBtn) playBtn.textContent = 'Play';
+              return;
+            }
             if (timeDisplay) {
               timeDisplay.textContent = `${formatDuration(Math.floor(curMs / 1000))} / ${formatDuration(Math.floor(totalMs / 1000))}`;
             }
@@ -414,10 +497,12 @@ export class PreviewModal {
         });
 
         playBtn?.addEventListener('click', () => {
+          isPlayingCut = false;
           this.domReplayer?.togglePlay();
         });
 
         scrubber?.addEventListener('input', (e) => {
+          isPlayingCut = false;
           const val = parseFloat((e.target as HTMLInputElement).value);
           this.domReplayer?.seek((val / 1000) * totalDurationMs);
         });
@@ -476,6 +561,7 @@ export class PreviewModal {
         let isScrubbing = false;
 
         const togglePlay = () => {
+          isPlayingCut = false;
           if (videoEl.paused || videoEl.ended) {
             videoEl.play().catch(() => {});
           } else {
@@ -505,6 +591,15 @@ export class PreviewModal {
         videoEl.addEventListener('timeupdate', () => {
           const dur = getVideoDuration();
           const cur = videoEl.currentTime || 0;
+
+          if (isPlayingCut && cur >= this.outSeconds) {
+            videoEl.pause();
+            videoEl.currentTime = this.inSeconds;
+            isPlayingCut = false;
+            if (videoPlayBtn) videoPlayBtn.textContent = 'Play';
+            return;
+          }
+
           const pct = Math.min(1000, Math.max(0, (cur / dur) * 1000));
           if (videoScrubber && !isScrubbing) {
             videoScrubber.value = String(Math.floor(pct));
@@ -515,6 +610,7 @@ export class PreviewModal {
         });
 
         videoScrubber?.addEventListener('input', () => {
+          isPlayingCut = false;
           isScrubbing = true;
           const dur = getVideoDuration();
           const targetTime = (Number(videoScrubber.value) / 1000) * dur;
@@ -558,6 +654,231 @@ export class PreviewModal {
       }
     }
 
+    // Wire trimmer controls
+    const prefix = isDom ? 'dom' : 'video';
+    const trimBtn = this.shadowRoot.querySelector(`#${prefix}TrimBtn`) as HTMLButtonElement | null;
+    const trimPanel = this.shadowRoot.querySelector(`#${prefix}TrimPanel`) as HTMLElement | null;
+    const trimTrack = this.shadowRoot.querySelector(`#${prefix}TrimTrack`) as HTMLElement | null;
+    const cutLeft = this.shadowRoot.querySelector(`#${prefix}TrimCutLeft`) as HTMLElement | null;
+    const highlight = this.shadowRoot.querySelector(`#${prefix}TrimHighlight`) as HTMLElement | null;
+    const cutRight = this.shadowRoot.querySelector(`#${prefix}TrimCutRight`) as HTMLElement | null;
+    const handleIn = this.shadowRoot.querySelector(`#${prefix}TrimHandleIn`) as HTMLElement | null;
+    const handleOut = this.shadowRoot.querySelector(`#${prefix}TrimHandleOut`) as HTMLElement | null;
+    const badgeIn = this.shadowRoot.querySelector(`#${prefix}TrimBadgeIn`) as HTMLElement | null;
+    const badgeOut = this.shadowRoot.querySelector(`#${prefix}TrimBadgeOut`) as HTMLElement | null;
+    const activeDurEl = this.shadowRoot.querySelector(`#${prefix}TrimActiveDur`) as HTMLElement | null;
+    const cutInfoEl = this.shadowRoot.querySelector(`#${prefix}TrimCutInfo`) as HTMLElement | null;
+    const previewBtn = this.shadowRoot.querySelector(`#${prefix}TrimPreviewBtn`) as HTMLButtonElement | null;
+    const resetBtn = this.shadowRoot.querySelector(`#${prefix}TrimResetBtn`) as HTMLButtonElement | null;
+    const downloadFullBtn = this.shadowRoot.querySelector('#satDownloadFullBtn') as HTMLButtonElement | null;
+    const downloadBtnText = this.shadowRoot.querySelector('#satDownloadBtnText') as HTMLElement | null;
+
+    const isTrimmed = () => {
+      return this.inSeconds > 0.05 || this.outSeconds < (totalDuration - 0.05);
+    };
+
+    const updateTrimUi = () => {
+      const inPct = Math.max(0, Math.min(100, (this.inSeconds / totalDuration) * 100));
+      const outPct = Math.max(0, Math.min(100, (this.outSeconds / totalDuration) * 100));
+
+      if (cutLeft) cutLeft.style.width = `${inPct}%`;
+      if (highlight) {
+        highlight.style.left = `${inPct}%`;
+        highlight.style.width = `${Math.max(0, outPct - inPct)}%`;
+      }
+      if (cutRight) cutRight.style.width = `${Math.max(0, 100 - outPct)}%`;
+
+      if (handleIn) {
+        handleIn.style.left = `${inPct}%`;
+        handleIn.setAttribute('aria-valuenow', String(Math.round(this.inSeconds)));
+      }
+      if (handleOut) {
+        handleOut.style.left = `${outPct}%`;
+        handleOut.setAttribute('aria-valuenow', String(Math.round(this.outSeconds)));
+      }
+
+      if (badgeIn) badgeIn.textContent = formatDuration(Math.round(this.inSeconds));
+      if (badgeOut) badgeOut.textContent = formatDuration(Math.round(this.outSeconds));
+
+      const trimmedDur = Math.max(0, this.outSeconds - this.inSeconds);
+      if (activeDurEl) activeDurEl.textContent = formatDuration(Math.round(trimmedDur));
+
+      const cutTotal = totalDuration - trimmedDur;
+      const trimmed = isTrimmed();
+
+      if (cutInfoEl) {
+        if (trimmed) {
+          cutInfoEl.textContent = `✂️ ${formatDuration(Math.round(cutTotal))} removed`;
+        } else {
+          cutInfoEl.textContent = 'Full Duration (No Cuts)';
+        }
+      }
+
+      if (downloadFullBtn) {
+        downloadFullBtn.style.display = trimmed ? 'inline-flex' : 'none';
+      }
+      if (downloadBtnText) {
+        if (trimmed) {
+          downloadBtnText.textContent = isDom
+            ? `Download Trimmed Replay (${formatDuration(Math.round(trimmedDur))})`
+            : `Download Trimmed Video (${formatDuration(Math.round(trimmedDur))})`;
+        } else {
+          downloadBtnText.textContent = isDom ? 'Download Replay (.html)' : 'Download Video';
+        }
+      }
+    };
+
+    trimBtn?.addEventListener('click', () => {
+      this.isTrimActive = !this.isTrimActive;
+      if (trimPanel) {
+        trimPanel.style.display = this.isTrimActive ? 'block' : 'none';
+      }
+      trimBtn.classList.toggle('is-active', this.isTrimActive);
+      trimBtn.textContent = this.isTrimActive ? '✕ Close Trimmer' : '✂️ Trim';
+    });
+
+    const makeDraggable = (handle: HTMLElement, isInHandle: boolean) => {
+      let isDragging = false;
+
+      const onPointerMove = (clientX: number) => {
+        if (!isDragging || !trimTrack) return;
+        const rect = trimTrack.getBoundingClientRect();
+        const trackWidth = rect.width || 1;
+        const offsetX = Math.max(0, Math.min(trackWidth, clientX - rect.left));
+        const targetSec = (offsetX / trackWidth) * totalDuration;
+
+        if (isInHandle) {
+          this.inSeconds = Math.max(0, Math.min(targetSec, this.outSeconds - 0.2));
+          updateTrimUi();
+          seekTo(this.inSeconds * 1000);
+        } else {
+          this.outSeconds = Math.min(totalDuration, Math.max(targetSec, this.inSeconds + 0.2));
+          updateTrimUi();
+          seekTo(this.outSeconds * 1000);
+        }
+      };
+
+      const onPointerUp = () => {
+        if (isDragging) {
+          isDragging = false;
+          handle.classList.remove('sat-trim-dragging');
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onPointerUp);
+          window.removeEventListener('touchmove', onTouchMove);
+          window.removeEventListener('touchend', onPointerUp);
+        }
+      };
+
+      const onMouseMove = (e: MouseEvent) => {
+        onPointerMove(e.clientX);
+      };
+
+      const onTouchMove = (e: TouchEvent) => {
+        if (e.touches && e.touches[0]) {
+          onPointerMove(e.touches[0].clientX);
+        }
+      };
+
+      handle.addEventListener('mousedown', (e: MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isDragging = true;
+        handle.classList.add('sat-trim-dragging');
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onPointerUp);
+      });
+
+      handle.addEventListener('touchstart', (e: TouchEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        isDragging = true;
+        handle.classList.add('sat-trim-dragging');
+        window.addEventListener('touchmove', onTouchMove, { passive: false });
+        window.addEventListener('touchend', onPointerUp);
+      });
+
+      handle.addEventListener('keydown', (e: KeyboardEvent) => {
+        const step = e.shiftKey ? 5 : 1;
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          if (isInHandle) {
+            this.inSeconds = Math.max(0, this.inSeconds - step);
+            seekTo(this.inSeconds * 1000);
+          } else {
+            this.outSeconds = Math.max(this.inSeconds + 0.2, this.outSeconds - step);
+            seekTo(this.outSeconds * 1000);
+          }
+          updateTrimUi();
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          if (isInHandle) {
+            this.inSeconds = Math.min(this.outSeconds - 0.2, this.inSeconds + step);
+            seekTo(this.inSeconds * 1000);
+          } else {
+            this.outSeconds = Math.min(totalDuration, this.outSeconds + step);
+            seekTo(this.outSeconds * 1000);
+          }
+          updateTrimUi();
+        }
+      });
+    };
+
+    if (handleIn) makeDraggable(handleIn, true);
+    if (handleOut) makeDraggable(handleOut, false);
+
+    trimTrack?.addEventListener('click', (e: MouseEvent) => {
+      if (e.target === handleIn || handleIn?.contains(e.target as Node)) return;
+      if (e.target === handleOut || handleOut?.contains(e.target as Node)) return;
+      const rect = trimTrack.getBoundingClientRect();
+      const trackWidth = rect.width || 1;
+      const offsetX = Math.max(0, Math.min(trackWidth, e.clientX - rect.left));
+      const targetSec = (offsetX / trackWidth) * totalDuration;
+
+      const distIn = Math.abs(targetSec - this.inSeconds);
+      const distOut = Math.abs(targetSec - this.outSeconds);
+
+      if (distIn <= distOut) {
+        this.inSeconds = Math.max(0, Math.min(targetSec, this.outSeconds - 0.2));
+        seekTo(this.inSeconds * 1000);
+      } else {
+        this.outSeconds = Math.min(totalDuration, Math.max(targetSec, this.inSeconds + 0.2));
+        seekTo(this.outSeconds * 1000);
+      }
+      updateTrimUi();
+    });
+
+    previewBtn?.addEventListener('click', () => {
+      isPlayingCut = true;
+      seekTo(this.inSeconds * 1000);
+      if (isDom) {
+        this.domReplayer?.play();
+      } else if (videoEl) {
+        videoEl.currentTime = this.inSeconds;
+        videoEl.play().catch(() => {});
+      }
+    });
+
+    resetBtn?.addEventListener('click', () => {
+      this.inSeconds = 0;
+      this.outSeconds = totalDuration;
+      isPlayingCut = false;
+      updateTrimUi();
+      seekTo(0);
+    });
+
+    updateTrimUi();
+
+    const getPreparedResult = async (onProgress?: (progress: number) => void): Promise<RecordingResult> => {
+      if (!isTrimmed()) {
+        return this.result;
+      }
+      return trimRecordingResult(
+        this.result,
+        { inSeconds: this.inSeconds, outSeconds: this.outSeconds },
+        onProgress
+      );
+    };
+
     const closeBtn = this.shadowRoot.querySelector('.sat-close-btn');
     const dismissBtn = this.shadowRoot.querySelector('.sat-btn-dismiss');
     const backdrop = this.shadowRoot.querySelector('.sat-modal-backdrop');
@@ -570,17 +891,70 @@ export class PreviewModal {
     dismissBtn?.addEventListener('click', handleClose);
     backdrop?.addEventListener('click', handleClose);
 
-    downloadBtn?.addEventListener('click', () => {
-      if (isDom && this.result.downloadHtmlReplay) {
-        this.result.downloadHtmlReplay();
+    downloadBtn?.addEventListener('click', async () => {
+      if (isTrimmed()) {
+        const origText = downloadBtnText?.textContent || '';
+        if (downloadBtnText) downloadBtnText.textContent = 'Trimming & Preparing...';
+        (downloadBtn as HTMLButtonElement).disabled = true;
+        try {
+          const trimmed = await getPreparedResult();
+          if (isDom && trimmed.downloadHtmlReplay) {
+            trimmed.downloadHtmlReplay();
+          } else {
+            trimmed.download();
+          }
+        } catch (err) {
+          console.error('[ShowAndTell] Failed to trim recording for download:', err);
+          if (isDom && this.result.downloadHtmlReplay) {
+            this.result.downloadHtmlReplay();
+          } else {
+            this.result.download();
+          }
+        } finally {
+          (downloadBtn as HTMLButtonElement).disabled = false;
+          if (downloadBtnText) downloadBtnText.textContent = origText;
+        }
       } else {
-        this.result.download();
+        if (isDom && this.result.downloadHtmlReplay) {
+          this.result.downloadHtmlReplay();
+        } else {
+          this.result.download();
+        }
       }
     });
 
-    downloadJsonBtn?.addEventListener('click', () => {
-      if (this.result.downloadJson) {
-        this.result.downloadJson();
+    downloadJsonBtn?.addEventListener('click', async () => {
+      if (isTrimmed()) {
+        (downloadJsonBtn as HTMLButtonElement).disabled = true;
+        try {
+          const trimmed = await getPreparedResult();
+          if (trimmed.downloadJson) {
+            trimmed.downloadJson();
+          } else {
+            trimmed.download();
+          }
+        } catch (err) {
+          console.error('[ShowAndTell] Failed to trim JSON recording:', err);
+          if (this.result.downloadJson) {
+            this.result.downloadJson();
+          } else {
+            this.result.download();
+          }
+        } finally {
+          (downloadJsonBtn as HTMLButtonElement).disabled = false;
+        }
+      } else {
+        if (this.result.downloadJson) {
+          this.result.downloadJson();
+        } else {
+          this.result.download();
+        }
+      }
+    });
+
+    downloadFullBtn?.addEventListener('click', () => {
+      if (isDom && this.result.downloadHtmlReplay) {
+        this.result.downloadHtmlReplay();
       } else {
         this.result.download();
       }
@@ -598,6 +972,16 @@ export class PreviewModal {
         (uploadBtn as HTMLButtonElement).disabled = true;
         if (feedbackEl) feedbackEl.innerHTML = '';
 
+        let targetResult = this.result;
+        if (isTrimmed()) {
+          if (btnLabel) btnLabel.textContent = 'Trimming video...';
+          try {
+            targetResult = await getPreparedResult();
+          } catch (err) {
+            console.warn('[ShowAndTell] Trimming before upload failed, uploading original:', err);
+          }
+        }
+
         if (this.isPresigned) {
           const presignedConfig = this.uploadConfig as PresignedUploadConfig;
           if (uploadContainer) uploadContainer.style.display = 'flex';
@@ -610,7 +994,7 @@ export class PreviewModal {
           if (btnLabel) btnLabel.textContent = 'Uploading...';
 
           try {
-            const uploadResult = await this.result.uploadPresigned({
+            const uploadResult = await targetResult.uploadPresigned({
               ...presignedConfig,
               onProgress: (progress) => {
                 if (progressFill) progressFill.style.width = `${progress.percent}%`;
@@ -672,7 +1056,7 @@ export class PreviewModal {
 
           if (btnLabel) btnLabel.textContent = 'Uploading...';
           try {
-            const res = await this.result.upload(endpoint, options);
+            const res = await targetResult.upload(endpoint, options);
             if (btnLabel) btnLabel.textContent = 'Uploaded Successfully!';
             if (typeof this.uploadConfig === 'object' && (this.uploadConfig as ServerUploadConfig).onSuccess) {
               (this.uploadConfig as ServerUploadConfig).onSuccess!(res);
