@@ -5,11 +5,11 @@
 [![Latest Release](https://img.shields.io/github/v/release/divmora/show-and-tell?logo=github)](https://github.com/divmora/show-and-tell/releases)
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-blue.svg)](https://github.com/divmora/.github/blob/main/LICENSING.md)
 [![CI/CD](https://github.com/divmora/show-and-tell/actions/workflows/ci.yml/badge.svg)](https://github.com/divmora/show-and-tell/actions)
-[![Security Policy](https://img.shields.io/badge/Security-Policy-green.svg)](SECURITY.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Bundled_with-Vite-646CFF)](https://vitejs.dev/)
 [![Live Demo](https://img.shields.io/badge/Live_Demo-GitHub_Pages-22c55e?logo=github)](https://divmora.github.io/show-and-tell/)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/divmora/show-and-tell)
+[![Security Policy](https://img.shields.io/badge/Security-Policy-green.svg)](SECURITY.md)
 
 ---
 

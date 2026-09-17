@@ -1,71 +1,40 @@
 # ShowAndTell Product Roadmap
 
 This document serves as the **living product roadmap** for ShowAndTell.
-- **Adding Items**: Whenever a new capability, enhancement, or edge-case improvement is identified for the future, add it here under the appropriate category and open a corresponding GitHub Issue.
-- **Removing Items**: Once a feature is fully implemented, verified, and committed, **remove it from this roadmap** and close the linked issue.
+
+> [!NOTE]
+> In accordance with [AGENTS.md](AGENTS.md), items are added when identified and pruned immediately once implemented, tested, and committed. Active tasks or defects tracked as GitHub Issues are intentionally omitted to avoid duplication.
 
 ---
 
-## 1. Recording UX & Real-Time Feedback
+## 🎯 Living Roadmap
 
-- [ ] **Live Microphone Audio Level Meter (VU Meter)** ([#12](https://github.com/divmora/show-and-tell/issues/12))
-  - Add a real-time 3-segment pulsating audio level indicator next to the microphone icon on the floating toolbar (`RecordingWidget`) and Document PiP window (`PipController`).
-  - Utilizes Web Audio `AnalyserNode` connected to `micSourceNode` to compute RMS volume.
-  - Alert the user if the microphone is unmuted but audio level stays near zero for >5 seconds ("Silent Mic Warning").
+### 🎙️ 1. Recording UX & Real-Time Feedback
+- *(Active implementation tasks for live microphone VU metering [#12](https://github.com/divmora/show-and-tell/issues/12), 3-2-1 countdown overlay [#13](https://github.com/divmora/show-and-tell/issues/13), and global keyboard hotkeys [#15](https://github.com/divmora/show-and-tell/issues/15) are tracked directly in GitHub Issues)*
 
-- [ ] **Global Keyboard Shortcuts (Hotkeys)** ([#15](https://github.com/divmora/show-and-tell/issues/15))
-  - Configurable hotkeys (e.g., `Alt+Shift+R` to Start/Stop, `Alt+Shift+P` to Pause/Resume, `Alt+Shift+C` to toggle camera bubble).
-  - Allows seamless control during full-screen apps and presentations without touching the toolbar.
+### ✏️ 2. Screen Annotations & Video Editing
+- *(Active implementation tasks for in-page telestrator drawing tools [#16](https://github.com/divmora/show-and-tell/issues/16) and post-recording video trimmer [#17](https://github.com/divmora/show-and-tell/issues/17) are tracked directly in GitHub Issues)*
 
----
+### 🔍 3. Session Replay & Diagnostics
+- *(Active implementation tasks for skipping inactivity in session replay [#18](https://github.com/divmora/show-and-tell/issues/18) and HAR-lite network inspector [#19](https://github.com/divmora/show-and-tell/issues/19) are tracked directly in GitHub Issues)*
 
-## 2. Screen Annotations & Video Editing
+### 💾 4. Storage & Cloud Uploads
+- *(Active implementation tasks for IndexedDB auto-pruning and storage budget caps [#20](https://github.com/divmora/show-and-tell/issues/20) are tracked directly in GitHub Issues)*
 
-- [ ] **Screen Annotation / Telestrator (Drawing Tools)** ([#16](https://github.com/divmora/show-and-tell/issues/16))
-  - In-page transparent canvas overlay allowing users to draw directly on screen while recording:
-    - Freehand pen / marker with color selection (Red, Yellow, Blue, Green).
-    - Vector arrow pointer tool for calling out specific buttons and UI areas.
-    - Disappearing ink mode (drawings automatically fade away after 3 seconds to avoid screen clutter).
-    - 1-click Clear / Eraser button.
-  - Captured natively in Pixel mode and serialized as vector drawing events in DOM mode.
-
-- [ ] **Post-Recording Video Trimmer** ([#17](https://github.com/divmora/show-and-tell/issues/17))
-  - Interactive `[In]` and `[Out]` trim handles on the video timeline scrubber in `PreviewModal`.
-  - Display trimmed duration in real time (e.g. `Original: 01:00 | Trimmed: 00:42`).
-  - Client-side trimming upon export so users can clip unwanted beginnings or endings without external video editors.
+### 🎨 5. Developer Ecosystem & Theming
+- *(Active implementation tasks for custom theming and white-label styling [#21](https://github.com/divmora/show-and-tell/issues/21) are tracked directly in GitHub Issues)*
 
 ---
 
-## 3. Session Replay & Diagnostics
+## 🔮 Long-Term Architectural Vision (Unassigned Backlog)
 
-- [ ] **Skip Inactivity in Session Replay** ([#18](https://github.com/divmora/show-and-tell/issues/18))
-  - Replay viewer toggle `[x] Skip Inactivity` in `DomReplayer` and standalone HTML player.
-  - Fast-forwards through periods of idle time / silence (>2 seconds with no user events) at 8x speed.
+The following high-level capabilities represent long-term exploration and backlog vision for the SDK:
 
-- [ ] **Full Network Request & Response Inspector (HAR-lite)** ([#19](https://github.com/divmora/show-and-tell/issues/19))
-  - Expand `DiagnosticsCollector` to capture sanitized HTTP request headers, request JSON bodies, response status, and response bodies (up to 32 KB).
-  - Display interactive Network tab inside the Diagnostics drawer of `PreviewModal` with method, status badge, headers, and formatted JSON viewer.
-  - Automatic redaction of sensitive credentials (`Authorization: Bearer ***`, `Cookie`, `x-api-key`).
-
----
-
-## 4. Storage & Cloud Uploads
-
-- [ ] **IndexedDB Auto-Pruning & Storage Budget Cap** ([#20](https://github.com/divmora/show-and-tell/issues/20))
-  - Automatic TTL expiration for recovered/unsaved sessions older than 7 days.
-  - Configurable storage budget (e.g., max 300 MB) with LRU eviction to prevent local disk bloat over long periods of usage.
-
----
-
-## 5. Developer Ecosystem & Theming
-
-- [ ] **Custom Theming & White-Label Styling** ([#21](https://github.com/divmora/show-and-tell/issues/21))
-  - Allow developers to customize toolbar and modal appearance to match their brand:
-    ```ts
-    theme: {
-      primaryColor: '#6366f1',
-      fontFamily: 'Inter, sans-serif',
-      borderRadius: '8px',
-      mode: 'dark' | 'light',
-    }
-    ```
+- [ ] **Direct S3 / Cloudflare R2 Multipart Presigned Uploads**
+  - Native client-side multipart chunk uploader for multi-gigabyte recordings streaming directly to object storage with automatic retry and resume support.
+- [ ] **WebCodecs Hardware Acceleration Pipeline**
+  - Transition from `MediaRecorder` to low-latency `VideoEncoder` and `AudioEncoder` primitives for precision frame-by-frame bitrate control and in-browser MP4 container muxing without transcoding delays.
+- [ ] **WebAssembly (WASM) Camera Virtual Background & Blur**
+  - Optional camera bubble background blur and virtual background replacement powered by a lightweight WASM/ONNX Web segmentation pipeline.
+- [ ] **Audio Noise Suppression & Speech Normalization Worklet**
+  - High-performance AudioWorklet DSP filter chain to automatically suppress microphone room echo, background HVAC hum, and typing clicks in real time.

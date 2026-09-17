@@ -7,6 +7,7 @@
       "include-component-in-tag": false,
       "extra-files": [
         "packages/sdk/package.json",
+        "packages/react/package.json",
         "packages/server/package.json"
       ],
       "changelog-sections": [

@@ -5,6 +5,7 @@ WORKDIR /app
 # Copy root and package manifests
 COPY package*.json ./
 COPY packages/sdk/package*.json ./packages/sdk/
+COPY packages/react/package*.json ./packages/react/
 COPY packages/server/package*.json ./packages/server/
 
 # Install all dependencies
