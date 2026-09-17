@@ -9,7 +9,11 @@ import type {
   PresignedUploadResult,
   RecordingMode,
   RequestedRecordingMode,
-  ThemeConfig
+  ThemeConfig,
+  StorageConfig,
+  StoragePruneOptions,
+  StoragePruneResult,
+  StorageStats
 } from './types';
 import { recorderEngine, RecorderEngine } from './core/recorder';
 import { storage } from './storage/indexeddb';
@@ -27,7 +31,7 @@ export { AudioMixer } from './core/audio-mixer';
 export { AudioLevelMeter } from './core/audio-meter';
 export { DurationTracker } from './core/duration-tracker';
 export { RecorderEngine, recorderEngine } from './core/recorder';
-export { storage, StorageManager } from './storage/indexeddb';
+export { storage, StorageManager, DEFAULT_MAX_STORAGE_BYTES, DEFAULT_MAX_AGE_MS } from './storage/indexeddb';
 export { formatDuration, formatBytes, parseDurationToMs } from './utils/time';
 export { getPreferredMimeType, getExtensionForMimeType } from './utils/codecs';
 export { PipController } from './ui/pip-controller';
@@ -287,13 +291,43 @@ export const ShowAndTell = {
   },
 
   /**
-   * Initializes SDK and checks for interrupted recordings from previous reloads.
+   * Automatically prunes expired sessions (> 7 days TTL) and enforces storage budget caps via LRU eviction.
    */
-  async init(config: { onReloadRecovery?: 'banner' | 'auto-download' | 'custom' | 'none'; theme?: ThemeConfig } = {}): Promise<void> {
+  async pruneStorage(options?: StoragePruneOptions): Promise<StoragePruneResult> {
+    return storage.pruneStorage(options);
+  },
+
+  /**
+   * Retrieves aggregate storage usage statistics across IndexedDB.
+   */
+  async getStorageStats(): Promise<StorageStats> {
+    return storage.getStorageStats();
+  },
+
+  /**
+   * Initializes SDK, checks for interrupted recordings from previous reloads,
+   * and automatically prunes expired storage.
+   */
+  async init(config: { 
+    onReloadRecovery?: 'banner' | 'auto-download' | 'custom' | 'none'; 
+    theme?: ThemeConfig;
+    storage?: boolean | StorageConfig;
+  } = {}): Promise<void> {
     if (typeof window === 'undefined') return;
 
     if (config.theme) {
       this.setTheme(config.theme);
+    }
+
+    // Auto-prune storage on init if enabled
+    if (config.storage !== false) {
+      const storageConfig = typeof config.storage === 'object' ? config.storage : {};
+      if (storageConfig.autoPrune !== false) {
+        storage.pruneStorage({
+          maxStorageBytes: storageConfig.maxStorageBytes,
+          maxAgeMs: storageConfig.maxAgeMs
+        }).catch(() => {});
+      }
     }
 
     const recoveryMode = config.onReloadRecovery ?? 'banner';

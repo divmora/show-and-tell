@@ -18,9 +18,6 @@ This document serves as the **living product roadmap** for ShowAndTell.
 ### 🔍 3. Session Replay & Diagnostics
 - *(Active implementation tasks for skipping inactivity in session replay [#18](https://github.com/divmora/show-and-tell/issues/18) and HAR-lite network inspector [#19](https://github.com/divmora/show-and-tell/issues/19) are tracked directly in GitHub Issues)*
 
-### 💾 4. Storage & Cloud Uploads
-- *(Active implementation tasks for IndexedDB auto-pruning and storage budget caps [#20](https://github.com/divmora/show-and-tell/issues/20) are tracked directly in GitHub Issues)*
-
 ---
 
 ## 🔮 Long-Term Architectural Vision (Unassigned Backlog)

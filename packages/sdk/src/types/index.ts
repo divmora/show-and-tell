@@ -255,8 +255,8 @@ export interface ShowAndTellConfig {
   previewModal?: boolean;
   /** Timeslice interval in milliseconds for chunk generation (default: 1000) */
   timeslice?: number;
-  /** Enable local IndexedDB persistence for reload recovery (default: true) */
-  storage?: boolean;
+  /** Enable local IndexedDB persistence for reload recovery, or configure storage budget and TTL auto-pruning (default: true) */
+  storage?: boolean | StorageConfig;
   /** Preferred default filename or prefix (default: 'recording') */
   filename?: string;
   /** Reload recovery behavior: 'banner' (default), 'auto-download', 'custom', or 'none' */
@@ -492,6 +492,56 @@ export interface SessionMetadata {
   status: 'active' | 'completed' | 'interrupted';
   filename?: string;
   updatedAt: number;
+  /** Total bytes of all chunks stored for this session */
+  totalBytes?: number;
+  /** Total count of chunks stored for this session */
+  chunkCount?: number;
+}
+
+export interface StorageConfig {
+  /** Enable or disable local IndexedDB persistence (default: true) */
+  enabled?: boolean;
+  /** Maximum storage budget cap in bytes (default: 300 MB = 300 * 1024 * 1024) */
+  maxStorageBytes?: number;
+  /** Maximum age TTL in milliseconds before unsaved sessions expire (default: 7 * 24 * 60 * 60 * 1000 = 7 days) */
+  maxAgeMs?: number;
+  /** Automatically prune expired and over-budget sessions on init or recording start (default: true) */
+  autoPrune?: boolean;
+}
+
+export interface StoragePruneOptions {
+  /** Maximum storage budget cap in bytes (default: 300 MB) */
+  maxStorageBytes?: number;
+  /** Maximum age TTL in milliseconds before unsaved sessions expire (default: 7 days) */
+  maxAgeMs?: number;
+  /** Optional custom cutoff timestamp in milliseconds (default: Date.now() - maxAgeMs) */
+  cutoffTime?: number;
+}
+
+export interface StoragePruneResult {
+  /** IDs of sessions evicted during pruning */
+  evictedSessionIds: string[];
+  /** Total number of bytes freed from IndexedDB */
+  freedBytes: number;
+  /** Total number of bytes currently consumed across all remaining sessions */
+  remainingBytes: number;
+  /** Number of sessions removed due to TTL expiration (> 7 days) */
+  expiredCount: number;
+  /** Number of sessions removed due to storage budget cap (LRU eviction) */
+  overBudgetCount: number;
+}
+
+export interface StorageStats {
+  /** Total bytes consumed by stored chunks */
+  totalBytes: number;
+  /** Total number of stored sessions */
+  sessionCount: number;
+  /** Total number of chunks stored */
+  chunkCount: number;
+  /** Oldest session timestamp */
+  oldestSessionTime?: number;
+  /** Newest session timestamp */
+  newestSessionTime?: number;
 }
 
 export interface ChunkRecord {

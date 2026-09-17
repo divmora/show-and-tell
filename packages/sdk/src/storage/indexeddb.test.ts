@@ -105,4 +105,126 @@ describe('StorageManager (IndexedDB)', () => {
     expect(session).toBeUndefined();
     expect(chunks.length).toBe(0);
   });
+
+  it('prunes sessions older than 7 days TTL', async () => {
+    const now = Date.now();
+    const tenDaysAgo = now - (10 * 24 * 60 * 60 * 1000);
+    const eightDaysAgo = now - (8 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = now - (1 * 24 * 60 * 60 * 1000);
+
+    // Expired session 1 (10 days old)
+    await storage.createSession({
+      id: 'expired_1',
+      startTime: tenDaysAgo,
+      updatedAt: tenDaysAgo,
+      mimeType: 'video/webm',
+      elapsedMs: 5000,
+      status: 'interrupted'
+    });
+    await storage.saveChunk('expired_1', 0, new Blob([new Uint8Array(500)]), 1000, tenDaysAgo);
+
+    // Expired session 2 (8 days old)
+    await storage.createSession({
+      id: 'expired_2',
+      startTime: eightDaysAgo,
+      updatedAt: eightDaysAgo,
+      mimeType: 'video/webm',
+      elapsedMs: 5000,
+      status: 'interrupted'
+    });
+    await storage.saveChunk('expired_2', 0, new Blob([new Uint8Array(300)]), 1000, eightDaysAgo);
+
+    // Valid recent session (1 day old)
+    await storage.createSession({
+      id: 'valid_recent',
+      startTime: oneDayAgo,
+      updatedAt: oneDayAgo,
+      mimeType: 'video/webm',
+      elapsedMs: 5000,
+      status: 'interrupted'
+    });
+    await storage.saveChunk('valid_recent', 0, new Blob([new Uint8Array(200)]), 1000, oneDayAgo);
+
+    // Run auto-pruning with default 7-day TTL
+    const result = await storage.pruneStorage();
+
+    expect(result.expiredCount).toBe(2);
+    expect(result.overBudgetCount).toBe(0);
+    expect(result.evictedSessionIds).toEqual(expect.arrayContaining(['expired_1', 'expired_2']));
+    expect(result.freedBytes).toBe(800);
+    expect(result.remainingBytes).toBe(200);
+
+    // Verify expired are deleted and valid remains
+    expect(await storage.getSession('expired_1')).toBeUndefined();
+    expect(await storage.getSession('expired_2')).toBeUndefined();
+    expect(await storage.getSession('valid_recent')).toBeDefined();
+    expect((await storage.getChunks('expired_1')).length).toBe(0);
+    expect((await storage.getChunks('valid_recent')).length).toBe(1);
+  });
+
+  it('enforces storage budget cap via LRU eviction of oldest sessions', async () => {
+    const now = Date.now();
+    const t1 = now - 4000;
+    const t2 = now - 3000;
+    const t3 = now - 2000;
+    const t4 = now - 1000;
+
+    // 4 sessions, each 50 bytes (total 200 bytes)
+    await storage.createSession({ id: 's1', startTime: t1, updatedAt: t1, mimeType: 'video/webm', elapsedMs: 1000, status: 'completed' });
+    await storage.saveChunk('s1', 0, new Blob([new Uint8Array(50)]), 1000);
+
+    await storage.createSession({ id: 's2', startTime: t2, updatedAt: t2, mimeType: 'video/webm', elapsedMs: 1000, status: 'completed' });
+    await storage.saveChunk('s2', 0, new Blob([new Uint8Array(50)]), 1000);
+
+    await storage.createSession({ id: 's3', startTime: t3, updatedAt: t3, mimeType: 'video/webm', elapsedMs: 1000, status: 'completed' });
+    await storage.saveChunk('s3', 0, new Blob([new Uint8Array(50)]), 1000);
+
+    await storage.createSession({ id: 's4', startTime: t4, updatedAt: t4, mimeType: 'video/webm', elapsedMs: 1000, status: 'completed' });
+    await storage.saveChunk('s4', 0, new Blob([new Uint8Array(50)]), 1000);
+
+    // Initial stats should show 200 bytes across 4 sessions
+    const initialStats = await storage.getStorageStats();
+    expect(initialStats.totalBytes).toBe(200);
+    expect(initialStats.sessionCount).toBe(4);
+    expect(initialStats.chunkCount).toBe(4);
+
+    // Prune with budget cap of 110 bytes
+    // To fit within 110 bytes from 200 bytes, oldest s1 (50b) and s2 (50b) must be evicted (leaving 100b <= 110b)
+    const result = await storage.pruneStorage({
+      maxStorageBytes: 110,
+      maxAgeMs: 1000000 // Ensure none are TTL expired
+    });
+
+    expect(result.expiredCount).toBe(0);
+    expect(result.overBudgetCount).toBe(2);
+    expect(result.evictedSessionIds).toEqual(['s1', 's2']);
+    expect(result.freedBytes).toBe(100);
+    expect(result.remainingBytes).toBe(100);
+
+    // Verify s1 and s2 deleted, s3 and s4 preserved
+    expect(await storage.getSession('s1')).toBeUndefined();
+    expect(await storage.getSession('s2')).toBeUndefined();
+    expect(await storage.getSession('s3')).toBeDefined();
+    expect(await storage.getSession('s4')).toBeDefined();
+
+    // Stats updated
+    const finalStats = await storage.getStorageStats();
+    expect(finalStats.totalBytes).toBe(100);
+    expect(finalStats.sessionCount).toBe(2);
+    expect(finalStats.chunkCount).toBe(2);
+  });
+
+  it('handles empty database pruning safely', async () => {
+    const result = await storage.pruneStorage();
+    expect(result.evictedSessionIds).toEqual([]);
+    expect(result.freedBytes).toBe(0);
+    expect(result.remainingBytes).toBe(0);
+    expect(result.expiredCount).toBe(0);
+    expect(result.overBudgetCount).toBe(0);
+
+    const stats = await storage.getStorageStats();
+    expect(stats.totalBytes).toBe(0);
+    expect(stats.sessionCount).toBe(0);
+    expect(stats.chunkCount).toBe(0);
+  });
 });

@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const floatingUiCheckbox = document.getElementById('floatingUi');
   const previewModalCheckbox = document.getElementById('previewModal');
   const storagePersistenceCheckbox = document.getElementById('storagePersistence');
+  const storageAutoPruneCheckbox = document.getElementById('storageAutoPrune');
+  const storageStatsText = document.getElementById('storageStatsText');
+  const btnPruneStorage = document.getElementById('btnPruneStorage');
+  const storageFeedback = document.getElementById('storageFeedback');
   const domMaskInputs = document.getElementById('domMaskInputs');
   const domMaskLabel = document.getElementById('domMaskLabel');
   const uploadModeSelect = document.getElementById('uploadMode');
@@ -117,7 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioMeter = audioMeterOption ? audioMeterOption.checked : true;
     const ui = floatingUiCheckbox ? floatingUiCheckbox.checked : true;
     const preview = previewModalCheckbox ? previewModalCheckbox.checked : true;
-    const storage = storagePersistenceCheckbox ? storagePersistenceCheckbox.checked : true;
+    const storageEnabled = storagePersistenceCheckbox ? storagePersistenceCheckbox.checked : true;
+    const storageAutoPrune = storageAutoPruneCheckbox ? storageAutoPruneCheckbox.checked : true;
     const maskInputs = domMaskInputs ? domMaskInputs.checked : true;
     const uploadMode = uploadModeSelect?.value || 'presigned';
 
@@ -187,7 +192,13 @@ document.addEventListener('DOMContentLoaded', () => {
     code += `  audioMeter: ${audioMeter}, // Real-time microphone VU meter & silent mic alert\n`;
     code += `  ui: ${ui}, // Floating draggable recording toolbar\n`;
     code += `  previewModal: ${preview}, // Post-recording playback & export modal\n`;
-    code += `  storage: ${storage}, // IndexedDB crash & reload recovery\n`;
+    if (!storageEnabled) {
+      code += `  storage: false, // Local IndexedDB recovery disabled\n`;
+    } else if (!storageAutoPrune) {
+      code += `  storage: {\n    enabled: true,\n    autoPrune: false // Auto-pruning disabled\n  },\n`;
+    } else {
+      code += `  storage: {\n    enabled: true,\n    autoPrune: true // 7-day TTL & 300MB LRU budget cap\n  },\n`;
+    }
     if (uploadMode === 'presigned') {
       code += `  // Direct Presigned Upload (AWS S3 / Cloudflare R2 / Supabase)\n`;
       code += `  upload: {\n`;
@@ -351,6 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
     floatingUiCheckbox,
     previewModalCheckbox,
     storagePersistenceCheckbox,
+    storageAutoPruneCheckbox,
     domMaskInputs,
     uploadModeSelect,
     themeModeSelect,
@@ -496,7 +508,10 @@ document.addEventListener('DOMContentLoaded', () => {
         spotlight: spotlightOption ? spotlightOption.checked : false,
         ui: floatingUiCheckbox.checked,
         previewModal: previewModalCheckbox.checked,
-        storage: storagePersistenceCheckbox.checked,
+        storage: storagePersistenceCheckbox.checked ? {
+          enabled: true,
+          autoPrune: storageAutoPruneCheckbox ? storageAutoPruneCheckbox.checked : true
+        } : false,
         theme: getSelectedTheme(),
         upload: uploadConfig,
         uploadEndpoint: uploadEndpoint
@@ -538,6 +553,7 @@ document.addEventListener('DOMContentLoaded', () => {
       activeSession.on('stop', (result) => {
         console.log('[Demo] Recording stopped:', result);
         updateUiState('stopped');
+        updateStorageStatsDisplay();
       });
 
     } catch (err) {
@@ -590,11 +606,62 @@ document.addEventListener('DOMContentLoaded', () => {
       const res = await session.assemble();
       res.download();
       await session.discard();
+      await updateStorageStatsDisplay();
     }
   });
 
-  btnClearStorage.addEventListener('click', async () => {
-    await window.ShowAndTell.clearAllStorage();
-    alert('Local IndexedDB storage cleared.');
-  });
+  async function updateStorageStatsDisplay() {
+    if (!window.ShowAndTell?.getStorageStats || !storageStatsText) return;
+    try {
+      const stats = await window.ShowAndTell.getStorageStats();
+      const usedMb = (stats.totalBytes / (1024 * 1024)).toFixed(1);
+      const budgetMb = (stats.budgetBytes / (1024 * 1024)).toFixed(0);
+      storageStatsText.textContent = `${usedMb} MB / ${budgetMb} MB (${stats.sessionCount} session${stats.sessionCount === 1 ? '' : 's'})`;
+      if (stats.usageRatio > 0.8) {
+        storageStatsText.style.color = '#f59e0b';
+      } else {
+        storageStatsText.style.color = '#e2e8f0';
+      }
+    } catch (err) {
+      console.warn('[Demo] Could not update storage stats:', err);
+    }
+  }
+
+  if (btnPruneStorage) {
+    btnPruneStorage.addEventListener('click', async () => {
+      try {
+        btnPruneStorage.disabled = true;
+        btnPruneStorage.textContent = 'Pruning...';
+        const result = await window.ShowAndTell.pruneStorage();
+        await updateStorageStatsDisplay();
+        if (storageFeedback) {
+          const freedMb = (result.freedBytes / (1024 * 1024)).toFixed(2);
+          storageFeedback.textContent = `Pruned ${result.prunedSessions} session(s) (${freedMb} MB freed).`;
+          storageFeedback.style.display = 'block';
+          setTimeout(() => { storageFeedback.style.display = 'none'; }, 4000);
+        }
+      } catch (err) {
+        console.error('[Demo] Prune storage error:', err);
+        alert(`Error pruning storage: ${err.message}`);
+      } finally {
+        btnPruneStorage.disabled = false;
+        btnPruneStorage.textContent = '✂️ Prune Storage';
+      }
+    });
+  }
+
+  if (btnClearStorage) {
+    btnClearStorage.addEventListener('click', async () => {
+      await window.ShowAndTell.clearAllStorage();
+      await updateStorageStatsDisplay();
+      if (storageFeedback) {
+        storageFeedback.textContent = 'Local IndexedDB storage cleared.';
+        storageFeedback.style.display = 'block';
+        setTimeout(() => { storageFeedback.style.display = 'none'; }, 4000);
+      }
+    });
+  }
+
+  // Initial fetch of storage stats
+  setTimeout(updateStorageStatsDisplay, 200);
 });

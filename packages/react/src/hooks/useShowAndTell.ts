@@ -7,7 +7,10 @@ import {
   type DurationStats,
   type ShowAndTellConfig,
   type AudioLevelData,
-  type ThemeConfig
+  type ThemeConfig,
+  type StoragePruneOptions,
+  type StoragePruneResult,
+  type StorageStats
 } from 'show-and-tell';
 import type { UseShowAndTellOptions, UseShowAndTellReturn } from '../types';
 
@@ -281,6 +284,14 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     };
   }, []);
 
+  const pruneStorage = useCallback(async (pruneOptions?: StoragePruneOptions): Promise<StoragePruneResult> => {
+    return ShowAndTell.pruneStorage(pruneOptions);
+  }, []);
+
+  const getStorageStats = useCallback(async (): Promise<StorageStats> => {
+    return ShowAndTell.getStorageStats();
+  }, []);
+
   return {
     state,
     isRecording: state === 'recording',
@@ -309,6 +320,8 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     setSpotlight,
     triggerClickRipple,
     setTheme,
-    clearError
+    clearError,
+    pruneStorage,
+    getStorageStats
   };
 }

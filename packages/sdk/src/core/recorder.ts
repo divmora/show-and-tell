@@ -141,7 +141,16 @@ export class RecorderEngine {
     const sessionId = `sat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const mimeType = mode === 'dom' ? 'application/json' : getPreferredMimeType();
     const timeslice = config.timeslice ?? 1000;
-    const shouldPersist = config.storage !== false;
+    const shouldPersist = config.storage !== false && (typeof config.storage !== 'object' || config.storage.enabled !== false);
+    if (shouldPersist) {
+      const storageOptions = typeof config.storage === 'object' ? config.storage : {};
+      if (storageOptions.autoPrune !== false) {
+        storage.pruneStorage({
+          maxStorageBytes: storageOptions.maxStorageBytes,
+          maxAgeMs: storageOptions.maxAgeMs
+        }).catch(() => {});
+      }
+    }
     const hasMicConfig = typeof config.audio === 'object' ? !!config.audio.mic : false;
     const hasSystemAudio = typeof config.audio === 'object' ? config.audio.system !== false : config.audio !== false;
     const hasCameraConfig = !!config.camera;
@@ -935,7 +944,8 @@ export class RecorderEngine {
     this.cameraUrl = undefined;
 
     // Update IndexedDB state to completed
-    if (config.storage !== false) {
+    const shouldPersist = config.storage !== false && (typeof config.storage !== 'object' || config.storage.enabled !== false);
+    if (shouldPersist) {
       await storage.updateSession({
         id: session.id,
         status: 'completed',

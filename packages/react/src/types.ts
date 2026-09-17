@@ -7,10 +7,14 @@ import type {
   DurationStats,
   AudioLevelData,
   ThemeConfig,
-  ThemeMode
+  ThemeMode,
+  StorageConfig,
+  StoragePruneOptions,
+  StoragePruneResult,
+  StorageStats
 } from 'show-and-tell';
 
-export type { ThemeConfig, ThemeMode };
+export type { ThemeConfig, ThemeMode, StorageConfig, StoragePruneOptions, StoragePruneResult, StorageStats };
 
 export interface UseShowAndTellOptions extends ShowAndTellConfig {
   /** Stop active recording automatically when component unmounts (default: false) */
@@ -80,6 +84,10 @@ export interface UseShowAndTellReturn {
   setTheme: (theme: ThemeConfig) => void;
   /** Reset error state */
   clearError: () => void;
+  /** Automatically prunes expired sessions (> 7 days TTL) and enforces storage budget caps via LRU eviction */
+  pruneStorage: (options?: StoragePruneOptions) => Promise<StoragePruneResult>;
+  /** Retrieves aggregate storage usage statistics across IndexedDB */
+  getStorageStats: () => Promise<StorageStats>;
 }
 
 export interface ShowAndTellProviderProps extends UseShowAndTellOptions {

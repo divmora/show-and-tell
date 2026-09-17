@@ -1,9 +1,18 @@
-import { ChunkRecord, SessionMetadata } from '../types';
+import { 
+  ChunkRecord, 
+  SessionMetadata, 
+  StoragePruneOptions, 
+  StoragePruneResult, 
+  StorageStats 
+} from '../types';
 
 const DB_NAME = 'ShowAndTell_DB';
 const DB_VERSION = 1;
 const SESSIONS_STORE = 'sessions';
 const CHUNKS_STORE = 'chunks';
+
+export const DEFAULT_MAX_STORAGE_BYTES = 300 * 1024 * 1024; // 300 MB
+export const DEFAULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 
 export class StorageManager {
   private dbPromise: Promise<IDBDatabase> | null = null;
@@ -58,7 +67,13 @@ export class StorageManager {
       return new Promise<void>((resolve, reject) => {
         const tx = db.transaction(SESSIONS_STORE, 'readwrite');
         const store = tx.objectStore(SESSIONS_STORE);
-        const req = store.put(metadata);
+        const record: SessionMetadata = {
+          totalBytes: 0,
+          chunkCount: 0,
+          ...metadata,
+          updatedAt: metadata.updatedAt || Date.now()
+        };
+        const req = store.put(record);
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error);
       });
@@ -97,7 +112,7 @@ export class StorageManager {
   /**
    * Save a single chunk slice.
    */
-  async saveChunk(sessionId: string, index: number, blob: Blob, elapsedMs: number): Promise<void> {
+  async saveChunk(sessionId: string, index: number, blob: Blob, elapsedMs: number, timestamp: number = Date.now()): Promise<void> {
     try {
       const db = await this.getDB();
       return new Promise<void>((resolve, reject) => {
@@ -109,18 +124,20 @@ export class StorageManager {
           sessionId,
           index,
           blob,
-          timestamp: Date.now(),
+          timestamp,
           elapsedMs
         });
 
-        // Update session elapsed time
+        // Update session elapsed time, byte count, and chunk count
         const sessionStore = tx.objectStore(SESSIONS_STORE);
         const getReq = sessionStore.get(sessionId);
         getReq.onsuccess = () => {
           if (getReq.result) {
             const meta = getReq.result as SessionMetadata;
             meta.elapsedMs = elapsedMs;
-            meta.updatedAt = Date.now();
+            meta.updatedAt = timestamp;
+            meta.totalBytes = (meta.totalBytes || 0) + (blob?.size || 0);
+            meta.chunkCount = (meta.chunkCount || 0) + 1;
             sessionStore.put(meta);
           }
         };
@@ -145,6 +162,166 @@ export class StorageManager {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
+  }
+
+  /**
+   * Retrieve all saved sessions in IndexedDB.
+   */
+  async getAllSessions(): Promise<SessionMetadata[]> {
+    try {
+      const db = await this.getDB();
+      return new Promise<SessionMetadata[]>((resolve, reject) => {
+        const tx = db.transaction(SESSIONS_STORE, 'readonly');
+        const store = tx.objectStore(SESSIONS_STORE);
+        const req = store.getAll();
+        req.onsuccess = () => resolve((req.result || []) as SessionMetadata[]);
+        req.onerror = () => reject(req.error);
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Calculate total size of chunks stored for a session.
+   */
+  async getSessionSize(sessionId: string): Promise<number> {
+    try {
+      const chunks = await this.getChunks(sessionId);
+      return chunks.reduce((acc, c) => acc + (c.blob?.size || 0), 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Retrieve aggregate storage statistics across all stored sessions and chunks.
+   */
+  async getStorageStats(): Promise<StorageStats> {
+    try {
+      const allSessions = await this.getAllSessions();
+      let totalBytes = 0;
+      let chunkCount = 0;
+      let oldestSessionTime: number | undefined;
+      let newestSessionTime: number | undefined;
+
+      for (const session of allSessions) {
+        const t = session.updatedAt || session.startTime;
+        if (oldestSessionTime === undefined || t < oldestSessionTime) oldestSessionTime = t;
+        if (newestSessionTime === undefined || t > newestSessionTime) newestSessionTime = t;
+
+        if (typeof session.totalBytes === 'number' && typeof session.chunkCount === 'number') {
+          totalBytes += session.totalBytes;
+          chunkCount += session.chunkCount;
+        } else {
+          const chunks = await this.getChunks(session.id);
+          chunkCount += chunks.length;
+          totalBytes += chunks.reduce((acc, c) => acc + (c.blob?.size || 0), 0);
+        }
+      }
+
+      return {
+        totalBytes,
+        sessionCount: allSessions.length,
+        chunkCount,
+        oldestSessionTime,
+        newestSessionTime
+      };
+    } catch {
+      return {
+        totalBytes: 0,
+        sessionCount: 0,
+        chunkCount: 0
+      };
+    }
+  }
+
+  /**
+   * Automatically prune expired sessions older than maxAgeMs (default: 7 days)
+   * and enforce maximum storage budget cap (default: 300 MB) via LRU eviction.
+   */
+  async pruneStorage(options: StoragePruneOptions = {}): Promise<StoragePruneResult> {
+    const maxStorageBytes = options.maxStorageBytes ?? DEFAULT_MAX_STORAGE_BYTES;
+    const maxAgeMs = options.maxAgeMs ?? DEFAULT_MAX_AGE_MS;
+    const cutoffTime = options.cutoffTime ?? (Date.now() - maxAgeMs);
+
+    const evictedSessionIds: string[] = [];
+    let freedBytes = 0;
+    let expiredCount = 0;
+    let overBudgetCount = 0;
+
+    try {
+      const allSessions = await this.getAllSessions();
+      if (allSessions.length === 0) {
+        return {
+          evictedSessionIds: [],
+          freedBytes: 0,
+          remainingBytes: 0,
+          expiredCount: 0,
+          overBudgetCount: 0
+        };
+      }
+
+      // Compute size and timestamp for each session
+      const sessionEntries = await Promise.all(
+        allSessions.map(async (session) => {
+          let size = session.totalBytes;
+          if (typeof size !== 'number') {
+            size = await this.getSessionSize(session.id);
+          }
+          const timestamp = session.updatedAt || session.startTime || 0;
+          return { session, size, timestamp };
+        })
+      );
+
+      // 1. TTL Expiration Phase (sessions older than cutoffTime)
+      const validEntries: typeof sessionEntries = [];
+
+      for (const entry of sessionEntries) {
+        if (entry.timestamp < cutoffTime) {
+          await this.deleteSession(entry.session.id);
+          evictedSessionIds.push(entry.session.id);
+          freedBytes += entry.size;
+          expiredCount++;
+        } else {
+          validEntries.push(entry);
+        }
+      }
+
+      // 2. Storage Budget Cap & LRU Eviction Phase
+      let currentTotalBytes = validEntries.reduce((acc, e) => acc + e.size, 0);
+
+      if (currentTotalBytes > maxStorageBytes) {
+        // Sort ascending by timestamp (oldest / least recently used first)
+        validEntries.sort((a, b) => a.timestamp - b.timestamp);
+
+        while (currentTotalBytes > maxStorageBytes && validEntries.length > 0) {
+          const oldest = validEntries.shift()!;
+          await this.deleteSession(oldest.session.id);
+          evictedSessionIds.push(oldest.session.id);
+          freedBytes += oldest.size;
+          overBudgetCount++;
+          currentTotalBytes -= oldest.size;
+        }
+      }
+
+      return {
+        evictedSessionIds,
+        freedBytes,
+        remainingBytes: Math.max(0, currentTotalBytes),
+        expiredCount,
+        overBudgetCount
+      };
+    } catch (err) {
+      console.warn('[ShowAndTell] Failed to prune storage in IndexedDB:', err);
+      return {
+        evictedSessionIds,
+        freedBytes,
+        remainingBytes: 0,
+        expiredCount,
+        overBudgetCount
+      };
+    }
   }
 
   /**

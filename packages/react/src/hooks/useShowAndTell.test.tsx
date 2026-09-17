@@ -367,4 +367,39 @@ describe('useShowAndTell', () => {
       primaryColor: '#f43f5e'
     });
   });
+
+  it('delegates pruneStorage and getStorageStats to ShowAndTell', async () => {
+    const mockPruneResult = {
+      evictedSessionIds: ['old_1'],
+      freedBytes: 1024,
+      remainingBytes: 2048,
+      expiredCount: 1,
+      overBudgetCount: 0
+    };
+    const mockStats = {
+      totalBytes: 2048,
+      sessionCount: 1,
+      chunkCount: 2,
+      oldestSessionTime: 1000,
+      newestSessionTime: 2000
+    };
+
+    const pruneSpy = vi.spyOn(ShowAndTell, 'pruneStorage').mockResolvedValue(mockPruneResult);
+    const statsSpy = vi.spyOn(ShowAndTell, 'getStorageStats').mockResolvedValue(mockStats);
+
+    const { result } = renderHook(() => useShowAndTell());
+
+    let pruneRes: any;
+    let statsRes: any;
+    await act(async () => {
+      pruneRes = await result.current.pruneStorage({ maxStorageBytes: 5000 });
+      statsRes = await result.current.getStorageStats();
+    });
+
+    expect(pruneSpy).toHaveBeenCalledWith({ maxStorageBytes: 5000 });
+    expect(pruneRes).toEqual(mockPruneResult);
+
+    expect(statsSpy).toHaveBeenCalled();
+    expect(statsRes).toEqual(mockStats);
+  });
 });
