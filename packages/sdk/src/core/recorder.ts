@@ -2,8 +2,10 @@ import {
   DiagnosticEntry,
   DiscontinueReason, 
   DomRecordingEvent,
+  RecordingMode,
   RecordingResult, 
   RecordingSession, 
+  RequestedRecordingMode,
   ShowAndTellConfig 
 } from '../types';
 import { AudioMixer } from './audio-mixer';
@@ -48,6 +50,27 @@ export class RecorderEngine {
   private stopResolver?: (result: RecordingResult) => void;
   private beforeUnloadHandler?: (e: BeforeUnloadEvent) => void;
 
+  static isScreenCaptureSupported(): boolean {
+    return typeof window !== 'undefined' && typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getDisplayMedia === 'function';
+  }
+
+  static isDomRecordingSupported(): boolean {
+    return typeof window !== 'undefined' && typeof document !== 'undefined' && typeof MutationObserver !== 'undefined';
+  }
+
+  static isSupported(mode?: RequestedRecordingMode): boolean {
+    if (mode === 'pixel') return RecorderEngine.isScreenCaptureSupported();
+    if (mode === 'dom') return RecorderEngine.isDomRecordingSupported();
+    return RecorderEngine.isScreenCaptureSupported() || RecorderEngine.isDomRecordingSupported();
+  }
+
+  static getSupportedModes(): RecordingMode[] {
+    const modes: RecordingMode[] = [];
+    if (RecorderEngine.isScreenCaptureSupported()) modes.push('pixel');
+    if (RecorderEngine.isDomRecordingSupported()) modes.push('dom');
+    return modes;
+  }
+
   isRecording(): boolean {
     return !!this.activeSession && (this.activeSession.state === 'recording' || this.activeSession.state === 'paused');
   }
@@ -62,13 +85,31 @@ export class RecorderEngine {
     }
 
     this.activeConfig = config;
-    const mode = config.mode || 'pixel';
+    const isScreenCaptureSupported = RecorderEngine.isScreenCaptureSupported();
+    const requestedMode = config.mode || 'pixel';
+    let mode: RecordingMode;
 
-    if (mode === 'pixel') {
-      if (typeof window === 'undefined' || !navigator.mediaDevices?.getDisplayMedia) {
-        throw new Error('Screen capture (getDisplayMedia) is not supported in this browser or environment.');
+    if (requestedMode === 'auto') {
+      mode = isScreenCaptureSupported ? 'pixel' : 'dom';
+    } else if (requestedMode === 'pixel') {
+      if (!isScreenCaptureSupported) {
+        if (config.fallbackToDom) {
+          console.warn('[ShowAndTell] Screen capture (getDisplayMedia) is not supported in this browser/device (e.g. iPhone / iOS browsers). Automatically falling back to DOM mode.');
+          mode = 'dom';
+        } else {
+          throw new Error(
+            'Screen capture (getDisplayMedia) is not supported in this browser or environment (e.g. iPhone / iOS browsers). ' +
+            'Use mode: "dom" or mode: "auto" (or pass fallbackToDom: true) to record sessions on mobile devices.'
+          );
+        }
+      } else {
+        mode = 'pixel';
       }
     } else {
+      mode = 'dom';
+    }
+
+    if (mode === 'dom') {
       if (typeof window === 'undefined' || typeof document === 'undefined') {
         throw new Error('DOM recording is only supported in browser environments with a DOM window and document.');
       }

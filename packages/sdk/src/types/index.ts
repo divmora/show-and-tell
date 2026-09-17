@@ -15,6 +15,7 @@ export type DiscontinueReason =
   | 'error';
 
 export type RecordingMode = 'pixel' | 'dom';
+export type RequestedRecordingMode = 'pixel' | 'dom' | 'auto';
 
 export interface DomConfig {
   /** Mask all form inputs and text areas (default: true) */
@@ -131,8 +132,10 @@ export interface CameraConfig {
 }
 
 export interface ShowAndTellConfig {
-  /** Recording mode: 'pixel' (screen/display capture, default) or 'dom' (in-app session replay) */
-  mode?: RecordingMode;
+  /** Recording mode: 'pixel' (screen capture, default), 'dom' (in-app session replay), or 'auto' (automatic detection based on device capabilities) */
+  mode?: RequestedRecordingMode;
+  /** Automatically fallback to DOM mode if screen capture (getDisplayMedia) is not supported in the current browser/device (e.g. iPhone / iOS browsers) */
+  fallbackToDom?: boolean;
   /** DOM recording configuration (active when mode is 'dom') */
   dom?: DomConfig;
   /** Developer diagnostics & breadcrumb tracking (default: true) */

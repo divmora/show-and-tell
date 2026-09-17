@@ -6,9 +6,11 @@ import type {
   DomRecordingEvent,
   PresignedUploadConfig,
   PresignedUploadContext,
-  PresignedUploadResult
+  PresignedUploadResult,
+  RecordingMode,
+  RequestedRecordingMode
 } from './types';
-import { recorderEngine } from './core/recorder';
+import { recorderEngine, RecorderEngine } from './core/recorder';
 import { storage } from './storage/indexeddb';
 import { RecoveryBanner } from './ui/recovery-banner';
 import { getExtensionForMimeType } from './utils/codecs';
@@ -21,6 +23,7 @@ export * from './diagnostics';
 export * from './camera';
 export { AudioMixer } from './core/audio-mixer';
 export { DurationTracker } from './core/duration-tracker';
+export { RecorderEngine, recorderEngine } from './core/recorder';
 export { storage, StorageManager } from './storage/indexeddb';
 export { formatDuration, formatBytes, parseDurationToMs } from './utils/time';
 export { getPreferredMimeType, getExtensionForMimeType } from './utils/codecs';
@@ -64,6 +67,43 @@ export const ShowAndTell = {
    */
   getActiveSession(): RecordingSession | undefined {
     return recorderEngine.getActiveSession();
+  },
+
+  /**
+   * Check if screen capture or DOM session replay is supported in the current browser/device.
+   */
+  isSupported(mode?: RequestedRecordingMode): boolean {
+    return RecorderEngine.isSupported(mode);
+  },
+
+  /**
+   * Check if native screen capture (getDisplayMedia) is supported in the current browser.
+   * Returns false on mobile browsers (e.g. iPhone Chrome/Safari, Android WebViews).
+   */
+  isScreenCaptureSupported(): boolean {
+    return RecorderEngine.isScreenCaptureSupported();
+  },
+
+  /**
+   * Check if in-app DOM session replay is supported in the current browser.
+   */
+  isDomRecordingSupported(): boolean {
+    return RecorderEngine.isDomRecordingSupported();
+  },
+
+  /**
+   * Retrieve an array of recording modes supported by the current browser environment.
+   */
+  getSupportedModes(): RecordingMode[] {
+    return RecorderEngine.getSupportedModes();
+  },
+
+  /**
+   * Detect whether current browser is running on a mobile OS (iOS, Android).
+   */
+  isMobile(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
   },
 
   /**

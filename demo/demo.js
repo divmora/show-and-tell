@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const domMaskInputs = document.getElementById('domMaskInputs');
   const domMaskLabel = document.getElementById('domMaskLabel');
   const uploadModeSelect = document.getElementById('uploadMode');
+  const mobileNotice = document.getElementById('mobileNotice');
   const btnStartText = document.getElementById('btnStartText');
 
   const embedCodeSnippet = document.getElementById('embedCodeSnippet');
@@ -79,8 +80,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Dynamic Ready-to-Use JavaScript Embed Code Generator
   function updateCodeSnippet() {
     if (!embedCodeSnippet) return;
-    const mode = recordingModeSelect?.value || 'pixel';
+    const mode = recordingModeSelect?.value || 'auto';
     const isDom = mode === 'dom';
+    const isAuto = mode === 'auto';
     const maxDur = parseInt(maxDurationSelect?.value || '0', 10);
     const warnThresh = parseInt(warningThresholdInput?.value || '5', 10) || 5;
     const mic = micAudioCheckbox ? micAudioCheckbox.checked : true;
@@ -98,13 +100,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadMode = uploadModeSelect?.value || 'presigned';
 
     if (snippetModeBadge) {
-      if (isDom) {
-        snippetModeBadge.textContent = 'DOM Mode Config (Session Replay)';
+      if (isAuto) {
+        snippetModeBadge.textContent = 'Auto Mode (Universal Desktop Video & Mobile Replay)';
+        snippetModeBadge.style.background = 'rgba(168, 85, 247, 0.15)';
+        snippetModeBadge.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+        snippetModeBadge.style.color = '#c084fc';
+      } else if (isDom) {
+        snippetModeBadge.textContent = 'DOM Mode Config (Session Replay - Zero Permission)';
         snippetModeBadge.style.background = 'rgba(16, 185, 129, 0.15)';
         snippetModeBadge.style.borderColor = 'rgba(16, 185, 129, 0.4)';
         snippetModeBadge.style.color = '#34d399';
       } else {
-        snippetModeBadge.textContent = 'Pixel Mode Config (Screen Capture)';
+        snippetModeBadge.textContent = 'Pixel Mode Config (Screen Capture - Desktop)';
         snippetModeBadge.style.background = 'rgba(59, 130, 246, 0.15)';
         snippetModeBadge.style.borderColor = 'rgba(59, 130, 246, 0.4)';
         snippetModeBadge.style.color = '#60a5fa';
@@ -116,7 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
     code += `// or: import { ShowAndTell } from '@divmora/show-and-tell';\n\n`;
     code += `// 2. Initialize recording session with your chosen options\n`;
     code += `const session = await window.ShowAndTell.startRecording({\n`;
-    code += `  mode: '${mode}',\n`;
+    code += `  mode: '${mode}', // 'auto' dynamically selects screen capture on desktop and DOM replay on mobile\n`;
+    code += `  fallbackToDom: true, // Seamlessly fallback to DOM recording if screen capture is unsupported\n`;
 
     if (maxDur > 0) {
       code += `  maxDuration: ${maxDur}, // Stop automatically after ${maxDur}s\n`;
@@ -234,12 +242,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Handle Mode Change
   function updateModeUi() {
-    const isDom = recordingModeSelect.value === 'dom';
+    const mode = recordingModeSelect?.value || 'auto';
+    const isMobileDevice = window.ShowAndTell?.isMobile ? window.ShowAndTell.isMobile() : /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+    const isScreenCaptureSupported = window.ShowAndTell?.isScreenCaptureSupported ? window.ShowAndTell.isScreenCaptureSupported() : (typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getDisplayMedia === 'function');
+
+    if (mobileNotice) {
+      mobileNotice.style.display = (!isScreenCaptureSupported || isMobileDevice) ? 'block' : 'none';
+    }
+
+    const effectiveDom = mode === 'dom' || (mode === 'auto' && !isScreenCaptureSupported);
     const cameraLabelText = document.getElementById('cameraLabelText');
-    if (isDom) {
-      if (btnStartText) btnStartText.textContent = 'Start In-App DOM Recording (0-Permission)';
+
+    if (effectiveDom) {
+      if (btnStartText) {
+        btnStartText.textContent = mode === 'auto'
+          ? 'Start Recording (Auto DOM Replay)'
+          : 'Start In-App DOM Recording (0-Permission)';
+      }
       if (statusMode) {
-        statusMode.textContent = 'DOM (SESSION REPLAY)';
+        statusMode.textContent = mode === 'auto' ? 'AUTO (DOM REPLAY)' : 'DOM (SESSION REPLAY)';
         statusMode.style.color = '#10b981';
       }
       if (domMaskLabel) domMaskLabel.style.display = 'flex';
@@ -248,15 +269,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (cameraLabelText) {
         cameraLabelText.textContent = 'Enable PiP Webcam Facecam (Synchronized Replay in DOM mode — Off by default)';
       }
-      // Explicitly keep off by default when switching to DOM mode
-      if (cameraOptionCheckbox) {
+      if (cameraOptionCheckbox && isMobileDevice) {
         cameraOptionCheckbox.checked = false;
         if (cameraConfigGroup) cameraConfigGroup.style.display = 'none';
       }
     } else {
-      if (btnStartText) btnStartText.textContent = 'Start Screen Recording';
+      if (btnStartText) {
+        btnStartText.textContent = mode === 'auto'
+          ? 'Start Recording (Auto Screen Share)'
+          : 'Start Screen Recording';
+      }
       if (statusMode) {
-        statusMode.textContent = 'PIXEL (VIDEO)';
+        statusMode.textContent = mode === 'auto' ? 'AUTO (PIXEL VIDEO)' : 'PIXEL (VIDEO)';
         statusMode.style.color = '#60a5fa';
       }
       if (domMaskLabel) domMaskLabel.style.display = 'none';
@@ -370,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       activeSession = await window.ShowAndTell.startRecording({
         mode: mode,
+        fallbackToDom: true,
         dom: {
           maskAllInputs: domMaskInputs ? domMaskInputs.checked : true,
           maskTextClass: 'sat-mask',
@@ -437,7 +462,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     } catch (err) {
       console.error('[Demo] Failed to start recording:', err);
-      alert(`Error starting recording: ${err.message}`);
+      if (err.message && err.message.includes('getDisplayMedia')) {
+        alert(
+          `Screen Capture Not Supported:\n\n${err.message}\n\nShowAndTell has switched your selection to DOM-Level Session Replay, which works reliably across all mobile browsers.`
+        );
+        if (recordingModeSelect) {
+          recordingModeSelect.value = 'dom';
+          updateModeUi();
+        }
+      } else {
+        alert(`Error starting recording: ${err.message}`);
+      }
       updateUiState('idle');
     }
   });

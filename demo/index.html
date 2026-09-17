@@ -134,9 +134,13 @@
         <div class="form-group">
           <label for="recordingMode">Recording Mode</label>
           <select id="recordingMode">
-            <option value="pixel" selected>Pixel-Level (Video / Screen Share - Default)</option>
-            <option value="dom">DOM-Level (In-App Session Replay - Zero Permission)</option>
+            <option value="auto" selected>Auto-Detect (Pixel on Desktop, DOM on Mobile - Recommended)</option>
+            <option value="pixel">Pixel-Level (Video / Screen Share - Desktop)</option>
+            <option value="dom">DOM-Level (In-App Session Replay - Zero Permission, iOS & Mobile Ready)</option>
           </select>
+          <div id="mobileNotice" style="display: none; margin-top: 8px; font-size: 12px; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 6px 10px;">
+            📱 <strong>Mobile Browser Detected (iOS / iPhone / Android):</strong> Screen capture is not supported on mobile browser engines. ShowAndTell automatically uses zero-permission DOM Session Replay for reliable recording.
+          </div>
         </div>
 
         <div class="form-group">
