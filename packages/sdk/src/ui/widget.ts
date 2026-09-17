@@ -8,7 +8,8 @@ const ICONS = {
   stop: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>`,
   micOn: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>`,
   micOff: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17L12.06 8.25c.01-.08.02-.16.02-.25V5c0-1.66-1.34-3-3-3-.25 0-.49.04-.71.1l7.61 7.61v1.71zm-9.74-7.9 1.41-1.41L21.19 19.4l-1.41 1.41-4.22-4.22C14.47 17.37 13.3 18 12 18c-3.41 0-6.23-2.72-6.72-6H3.58C4.06 15.28 6.78 18.1 10 18.58V21h2v-2.42c.86-.13 1.66-.43 2.37-.87l-7.13-7.14V11H5.58c0 .28.03.55.08.81L4.24 3.27z"/></svg>`,
-  pip: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>`
+  pip: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>`,
+  spotlight: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 17.93V19a1 1 0 0 1-2 0v-.07A8 8 0 0 1 4.07 13H5a1 1 0 0 1 0-2h-.93A8 8 0 0 1 11 4.07V5a1 1 0 0 1 2 0v-.07A8 8 0 0 1 19.93 11H19a1 1 0 0 1 0 2h.93A8 8 0 0 1 13 18.93zM12 8a4 4 0 1 0 4 4 4 4 0 0 0-4-4z"/></svg>`
 };
 
 export class RecordingWidget {
@@ -21,7 +22,9 @@ export class RecordingWidget {
   private micBtn?: HTMLButtonElement;
   private stopBtn?: HTMLButtonElement;
   private pipBtn?: HTMLButtonElement;
+  private spotlightBtn?: HTMLButtonElement;
   private unsubscribeTick?: () => void;
+  private unsubscribeSpotlight?: () => void;
 
   public onPopoutRequest?: () => void;
 
@@ -70,6 +73,9 @@ export class RecordingWidget {
         <button class="sat-btn sat-btn-stop" title="Stop Recording">
           ${ICONS.stop}
         </button>
+        <button class="sat-btn sat-btn-spotlight" title="Toggle Cursor Spotlight">
+          ${ICONS.spotlight}
+        </button>
         <button class="sat-btn sat-btn-pip" title="Float over all apps (Always-on-Top PiP across windows and tabs)">
           ${ICONS.pip}
         </button>
@@ -83,9 +89,14 @@ export class RecordingWidget {
     this.timerSubEl = this.containerEl.querySelector('.sat-timer-sub') as HTMLElement;
     this.pauseBtn = this.containerEl.querySelector('.sat-btn-pause') as HTMLButtonElement;
     this.stopBtn = this.containerEl.querySelector('.sat-btn-stop') as HTMLButtonElement;
+    this.spotlightBtn = this.containerEl.querySelector('.sat-btn-spotlight') as HTMLButtonElement;
     this.pipBtn = this.containerEl.querySelector('.sat-btn-pip') as HTMLButtonElement;
     if (this.hasMic) {
       this.micBtn = this.containerEl.querySelector('.sat-btn-mic') as HTMLButtonElement;
+    }
+
+    if (this.session.isSpotlightActive?.()) {
+      this.updateSpotlightBtn(true);
     }
 
     this.setupListeners();
@@ -107,6 +118,18 @@ export class RecordingWidget {
           this.pauseBtn!.title = 'Pause Recording';
           this.containerEl?.classList.remove('sat-paused');
         }
+      });
+    }
+
+    if (this.spotlightBtn) {
+      this.spotlightBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const active = this.session.toggleSpotlight();
+        this.updateSpotlightBtn(active);
+      });
+
+      this.unsubscribeSpotlight = this.session.on('spotlightChange', (active: boolean) => {
+        this.updateSpotlightBtn(active);
       });
     }
 
@@ -231,10 +254,25 @@ export class RecordingWidget {
     handle.addEventListener('mousedown', onMouseDown);
   }
 
+  private updateSpotlightBtn(active: boolean): void {
+    if (!this.spotlightBtn) return;
+    if (active) {
+      this.spotlightBtn.classList.add('sat-btn-active-spotlight');
+      this.spotlightBtn.title = 'Turn Off Cursor Spotlight';
+    } else {
+      this.spotlightBtn.classList.remove('sat-btn-active-spotlight');
+      this.spotlightBtn.title = 'Turn On Cursor Spotlight';
+    }
+  }
+
   destroy(): void {
     if (this.unsubscribeTick) {
       this.unsubscribeTick();
       this.unsubscribeTick = undefined;
+    }
+    if (this.unsubscribeSpotlight) {
+      this.unsubscribeSpotlight();
+      this.unsubscribeSpotlight = undefined;
     }
     if (this.hostElement && this.hostElement.parentNode) {
       this.hostElement.parentNode.removeChild(this.hostElement);

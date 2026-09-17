@@ -180,6 +180,13 @@ export const WIDGET_STYLES = `
   color: #f87171;
 }
 
+.sat-btn.sat-btn-active-spotlight {
+  background: rgba(59, 130, 246, 0.3);
+  border-color: #3b82f6;
+  color: #60a5fa;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.35);
+}
+
 .sat-btn.sat-btn-pip {
   background: rgba(59, 130, 246, 0.15);
   border-color: rgba(59, 130, 246, 0.35);

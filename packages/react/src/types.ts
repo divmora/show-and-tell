@@ -39,6 +39,8 @@ export interface UseShowAndTellReturn {
   isWarning: boolean;
   /** True if microphone voiceover is currently muted */
   isMicMuted: boolean;
+  /** True if cursor spotlight dimming mode is currently active */
+  isSpotlightActive: boolean;
   /** The currently active recording session object, or null */
   activeSession: RecordingSession | null;
   /** The most recent recording result, or null */
@@ -59,6 +61,12 @@ export interface UseShowAndTellReturn {
   muteMic: () => void;
   /** Unmute microphone audio */
   unmuteMic: () => void;
+  /** Toggle cursor spotlight. Returns new active state */
+  toggleSpotlight: () => boolean;
+  /** Enable or disable cursor spotlight */
+  setSpotlight: (enabled: boolean) => void;
+  /** Trigger a click ripple animation at specified viewport coordinates */
+  triggerClickRipple: (x: number, y: number, color?: string) => void;
   /** Reset error state */
   clearError: () => void;
 }

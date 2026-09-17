@@ -20,6 +20,7 @@ import { DiagnosticsCollector } from '../diagnostics/collector';
 import { CameraBubble } from '../camera/bubble';
 import { VideoCompositor } from '../camera/compositor';
 import { PipController } from '../ui/pip-controller';
+import { CursorEffectsManager } from '../ui/cursor-effects';
 import { formatDuration } from '../utils/time';
 
 export class RecorderEngine {
@@ -28,6 +29,7 @@ export class RecorderEngine {
   private mediaRecorder?: MediaRecorder;
   private domRecorder?: DomRecorder;
   private pipController?: PipController;
+  private cursorEffects?: CursorEffectsManager;
   private originalDocumentTitle?: string;
   private domEvents: DomRecordingEvent[] = [];
   private displayStream?: MediaStream;
@@ -246,6 +248,18 @@ export class RecorderEngine {
           }
           this.pipController?.updateState('recording');
           this.updateDocumentTitle(false, (this.durationTracker?.getStats().elapsedMs ?? 0) / 1000);
+        },
+        onToggleSpotlight: () => {
+          return this.cursorEffects ? this.cursorEffects.toggleSpotlight() : false;
+        },
+        onSetSpotlight: (enabled: boolean) => {
+          this.cursorEffects?.setSpotlight(enabled);
+        },
+        onIsSpotlightActive: () => {
+          return this.cursorEffects ? this.cursorEffects.isSpotlightActive() : false;
+        },
+        onTriggerRipple: (x: number, y: number, color?: string) => {
+          this.cursorEffects?.triggerRipple(x, y, color);
         }
       });
 
@@ -255,11 +269,11 @@ export class RecorderEngine {
           id: sessionId,
           startTime: Date.now(),
           mimeType: 'application/json',
-          mode: 'dom',
           maxDurationMs: this.durationTracker.getStats().maxDurationMs,
           elapsedMs: 0,
           status: 'active',
           filename: config.filename,
+          mode: 'dom',
           updatedAt: Date.now()
         });
 
@@ -297,6 +311,17 @@ export class RecorderEngine {
       this.durationTracker.start();
       this.activeSession.state = 'recording';
       this.activeSession.emit('start');
+
+      // Mount cursor effects (click ripple and spotlight)
+      if (config.cursorEffects !== false) {
+        const cursorConfig = typeof config.cursorEffects === 'object' ? config.cursorEffects : {};
+        this.cursorEffects = new CursorEffectsManager(this.activeSession, {
+          clickRipple: config.clickRipple ?? cursorConfig.clickRipple ?? true,
+          spotlight: config.spotlight ?? cursorConfig.spotlight ?? false,
+          ...cursorConfig
+        });
+        this.cursorEffects.mount();
+      }
 
       // Mount widget
       if (config.ui !== false) {
@@ -428,6 +453,18 @@ export class RecorderEngine {
         }
         this.pipController?.updateState('recording');
         this.updateDocumentTitle(false, (this.durationTracker?.getStats().elapsedMs ?? 0) / 1000);
+      },
+      onToggleSpotlight: () => {
+        return this.cursorEffects ? this.cursorEffects.toggleSpotlight() : false;
+      },
+      onSetSpotlight: (enabled: boolean) => {
+        this.cursorEffects?.setSpotlight(enabled);
+      },
+      onIsSpotlightActive: () => {
+        return this.cursorEffects ? this.cursorEffects.isSpotlightActive() : false;
+      },
+      onTriggerRipple: (x: number, y: number, color?: string) => {
+        this.cursorEffects?.triggerRipple(x, y, color);
       }
     });
 
@@ -516,7 +553,18 @@ export class RecorderEngine {
     this.activeSession.state = 'recording';
     this.activeSession.emit('start');
 
-    // 12. Mount Floating UI Widget (if enabled)
+    // 12. Mount cursor effects (click ripple and spotlight)
+    if (config.cursorEffects !== false) {
+      const cursorConfig = typeof config.cursorEffects === 'object' ? config.cursorEffects : {};
+      this.cursorEffects = new CursorEffectsManager(this.activeSession, {
+        clickRipple: config.clickRipple ?? cursorConfig.clickRipple ?? true,
+        spotlight: config.spotlight ?? cursorConfig.spotlight ?? false,
+        ...cursorConfig
+      });
+      this.cursorEffects.mount();
+    }
+
+    // 13. Mount Floating UI Widget (if enabled)
     if (config.ui !== false) {
       this.widget = new RecordingWidget(this.activeSession, !!this.micStream);
       this.widget.onPopoutRequest = () => {
@@ -685,6 +733,12 @@ export class RecorderEngine {
     if (this.widget) {
       this.widget.destroy();
       this.widget = undefined;
+    }
+
+    // Clean up cursor effects
+    if (this.cursorEffects) {
+      this.cursorEffects.destroy();
+      this.cursorEffects = undefined;
     }
 
     // Close Document PiP window if active

@@ -131,6 +131,29 @@ export interface CameraConfig {
   alwaysOnTop?: boolean;
 }
 
+export interface CursorEffectsConfig {
+  /** Enable radial ripple animation on mouse clicks (default: true) */
+  clickRipple?: boolean;
+  /** Primary ripple color for left clicks (default: '#3b82f6') */
+  rippleColor?: string;
+  /** Ripple color for right clicks (default: '#f59e0b') */
+  rightClickRippleColor?: string;
+  /** Maximum diameter of the ripple in pixels (default: 64) */
+  rippleSize?: number;
+  /** Duration of ripple animation in milliseconds (default: 550) */
+  rippleDurationMs?: number;
+  /** Enable cursor spotlight dimming mode on start (default: false) */
+  spotlight?: boolean;
+  /** Radius of the spotlight illuminated circle in pixels (default: 90) */
+  spotlightRadius?: number;
+  /** Dimming overlay opacity between 0.0 and 1.0 (default: 0.45) */
+  spotlightOpacity?: number;
+  /** Color of the dimmed backdrop (default: 'rgba(0, 0, 0, 0.45)') */
+  spotlightColor?: string;
+  /** Whether to show an illuminated ring around the spotlight circle (default: true) */
+  spotlightRing?: boolean;
+}
+
 export interface ShowAndTellConfig {
   /** Recording mode: 'pixel' (screen capture, default), 'dom' (in-app session replay), or 'auto' (automatic detection based on device capabilities) */
   mode?: RequestedRecordingMode;
@@ -144,6 +167,12 @@ export interface ShowAndTellConfig {
   camera?: boolean | CameraConfig;
   /** Always-on-top Document Picture-in-Picture floating window across all windows, applications, and tabs */
   alwaysOnTop?: boolean;
+  /** Cursor interaction feedback effects (click ripple animations and cursor spotlight) (default: true) */
+  cursorEffects?: boolean | CursorEffectsConfig;
+  /** Shorthand to enable/disable click ripple animations (default: true) */
+  clickRipple?: boolean;
+  /** Shorthand to enable/disable cursor spotlight dimming mode (default: false) */
+  spotlight?: boolean;
   /** Maximum recording duration in seconds (e.g. 120) or string format (e.g. '2m', '30s', '1h'). Recording will automatically discontinue after this time. */
   maxDuration?: number | string;
   /** Threshold in seconds before maxDuration to trigger warning indicators (default: 10s). */
@@ -339,6 +368,14 @@ export interface RecordingSession {
   toggleMic: () => boolean;
   /** Check if microphone is currently muted */
   isMicMuted: () => boolean;
+  /** Toggle cursor spotlight on/off. Returns new spotlight state */
+  toggleSpotlight: () => boolean;
+  /** Enable or disable cursor spotlight */
+  setSpotlight: (enabled: boolean) => void;
+  /** Check if cursor spotlight is currently active */
+  isSpotlightActive: () => boolean;
+  /** Trigger a click ripple animation at specified viewport coordinates */
+  triggerClickRipple: (x: number, y: number, color?: string) => void;
   /** Subscribe to session events */
   on: (event: SessionEventName, handler: (...args: any[]) => void) => () => void;
   /** Unsubscribe from session events */
@@ -355,6 +392,7 @@ export type SessionEventName =
   | 'maxDurationReached'
   | 'chunk'
   | 'micMuteChange'
+  | 'spotlightChange'
   | 'error';
 
 export interface SessionMetadata {

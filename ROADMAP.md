@@ -18,10 +18,6 @@ This document serves as the **living product roadmap** for ShowAndTell.
   - Smooth animated circular countdown numbers (`3`, `2`, `1`, `Go!`) with synthetic audio tick.
   - Includes a "Start Immediately" skip button to jump straight into recording.
 
-- [ ] **Click Ripple & Cursor Spotlight** ([#14](https://github.com/divmora/show-and-tell/issues/14))
-  - Transient radial pulse animations around mouse clicks during recording so viewers can clearly track user interactions in pixel screen recordings.
-  - Optional spotlight dimming mode for focusing on specific UI elements.
-
 - [ ] **Global Keyboard Shortcuts (Hotkeys)** ([#15](https://github.com/divmora/show-and-tell/issues/15))
   - Configurable hotkeys (e.g., `Alt+Shift+R` to Start/Stop, `Alt+Shift+P` to Pause/Resume, `Alt+Shift+C` to toggle camera bubble).
   - Allows seamless control during full-screen apps and presentations without touching the toolbar.

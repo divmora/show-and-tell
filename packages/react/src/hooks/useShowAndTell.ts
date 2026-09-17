@@ -30,6 +30,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
   const [isWarning, setIsWarning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [isSpotlightActive, setIsSpotlightActive] = useState(false);
   const [activeSession, setActiveSession] = useState<RecordingSession | null>(null);
   const [lastResult, setLastResult] = useState<RecordingResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -52,6 +53,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       setState(existing.state);
       setIsPaused(existing.state === 'paused');
       setIsMicMuted(existing.isMicMuted());
+      setIsSpotlightActive(existing.isSpotlightActive());
       const currentStats = existing.getStats();
       setStats(currentStats);
       setFormattedElapsed(currentStats.formattedElapsed);
@@ -95,6 +97,10 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       setIsMicMuted(Boolean(muted));
     });
 
+    const offSpotlight = session.on('spotlightChange', (active: boolean) => {
+      setIsSpotlightActive(Boolean(active));
+    });
+
     const offStop = session.on('stop', (result: RecordingResult) => {
       setLastResult(result);
       setState('stopped');
@@ -115,6 +121,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       offPause();
       offResume();
       offMic();
+      offSpotlight();
       offStop();
       offError();
     };
@@ -216,6 +223,31 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     }
   }, []);
 
+  const toggleSpotlight = useCallback((): boolean => {
+    const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+    if (session) {
+      const active = session.toggleSpotlight();
+      setIsSpotlightActive(active);
+      return active;
+    }
+    return false;
+  }, []);
+
+  const setSpotlight = useCallback((enabled: boolean) => {
+    const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+    if (session) {
+      session.setSpotlight(enabled);
+      setIsSpotlightActive(enabled);
+    }
+  }, []);
+
+  const triggerClickRipple = useCallback((x: number, y: number, color?: string) => {
+    const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+    if (session) {
+      session.triggerClickRipple(x, y, color);
+    }
+  }, []);
+
   // Cleanup on unmount if requested
   useEffect(() => {
     return () => {
@@ -236,6 +268,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     progressRatio,
     isWarning,
     isMicMuted,
+    isSpotlightActive,
     activeSession,
     lastResult,
     error,
@@ -246,6 +279,9 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     toggleMic,
     muteMic,
     unmuteMic,
+    toggleSpotlight,
+    setSpotlight,
+    triggerClickRipple,
     clearError
   };
 }

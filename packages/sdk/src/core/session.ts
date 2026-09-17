@@ -29,6 +29,10 @@ export interface SessionInitOptions {
   onStopRequest: () => Promise<RecordingResult>;
   onPauseRequest: () => void;
   onResumeRequest: () => void;
+  onToggleSpotlight?: () => boolean;
+  onSetSpotlight?: (enabled: boolean) => void;
+  onIsSpotlightActive?: () => boolean;
+  onTriggerRipple?: (x: number, y: number, color?: string) => void;
 }
 
 export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, any[]>> implements RecordingSession {
@@ -42,6 +46,10 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
   private onStopRequest: () => Promise<RecordingResult>;
   private onPauseRequest: () => void;
   private onResumeRequest: () => void;
+  private onToggleSpotlight?: () => boolean;
+  private onSetSpotlight?: (enabled: boolean) => void;
+  private onIsSpotlightActive?: () => boolean;
+  private onTriggerRipple?: (x: number, y: number, color?: string) => void;
   private stopPromise?: Promise<RecordingResult>;
 
   constructor(options: SessionInitOptions) {
@@ -55,6 +63,10 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
     this.onStopRequest = options.onStopRequest;
     this.onPauseRequest = options.onPauseRequest;
     this.onResumeRequest = options.onResumeRequest;
+    this.onToggleSpotlight = options.onToggleSpotlight;
+    this.onSetSpotlight = options.onSetSpotlight;
+    this.onIsSpotlightActive = options.onIsSpotlightActive;
+    this.onTriggerRipple = options.onTriggerRipple;
 
     // Forward duration tracker events
     this.durationTracker.on('tick', (stats) => this.emit('tick', stats));
@@ -121,6 +133,30 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
 
   isMicMuted(): boolean {
     return this.audioMixer ? this.audioMixer.isMicMuted() : false;
+  }
+
+  toggleSpotlight(): boolean {
+    if (this.onToggleSpotlight) {
+      const active = this.onToggleSpotlight();
+      this.emit('spotlightChange', active);
+      return active;
+    }
+    return false;
+  }
+
+  setSpotlight(enabled: boolean): void {
+    if (this.onSetSpotlight) {
+      this.onSetSpotlight(enabled);
+      this.emit('spotlightChange', enabled);
+    }
+  }
+
+  isSpotlightActive(): boolean {
+    return this.onIsSpotlightActive ? this.onIsSpotlightActive() : false;
+  }
+
+  triggerClickRipple(x: number, y: number, color?: string): void {
+    this.onTriggerRipple?.(x, y, color);
   }
 
   /**

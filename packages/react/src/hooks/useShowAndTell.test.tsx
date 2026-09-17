@@ -54,6 +54,15 @@ function createMockSession() {
       micMuted = false;
       session.emit('micMuteChange', false);
     }),
+    toggleSpotlight: vi.fn(() => {
+      session.emit('spotlightChange', true);
+      return true;
+    }),
+    setSpotlight: vi.fn((enabled: boolean) => {
+      session.emit('spotlightChange', enabled);
+    }),
+    isSpotlightActive: vi.fn(() => false),
+    triggerClickRipple: vi.fn(),
     on: vi.fn((event: string, handler: Function) => {
       if (!listeners.has(event)) listeners.set(event, []);
       listeners.get(event)!.push(handler);
@@ -200,6 +209,30 @@ describe('useShowAndTell', () => {
 
     expect(mockSession.toggleMic).toHaveBeenCalled();
     expect(result.current.isMicMuted).toBe(true);
+  });
+
+  it('handles cursor spotlight and click ripple controls', async () => {
+    const mockSession = createMockSession();
+    vi.spyOn(ShowAndTell, 'startRecording').mockResolvedValue(mockSession as any);
+
+    const { result } = renderHook(() => useShowAndTell());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    act(() => {
+      result.current.toggleSpotlight();
+    });
+
+    expect(mockSession.toggleSpotlight).toHaveBeenCalled();
+    expect(result.current.isSpotlightActive).toBe(true);
+
+    act(() => {
+      result.current.triggerClickRipple(100, 200, '#ff0000');
+    });
+
+    expect(mockSession.triggerClickRipple).toHaveBeenCalledWith(100, 200, '#ff0000');
   });
 
   it('stops recording and saves lastResult', async () => {

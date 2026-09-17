@@ -46,6 +46,10 @@ function createMockSession() {
     toggleMic: vi.fn(() => true),
     muteMic: vi.fn(),
     unmuteMic: vi.fn(),
+    toggleSpotlight: vi.fn(() => true),
+    setSpotlight: vi.fn(),
+    isSpotlightActive: vi.fn(() => false),
+    triggerClickRipple: vi.fn(),
     on: vi.fn((event: string, handler: Function) => {
       if (!listeners.has(event)) listeners.set(event, []);
       listeners.get(event)!.push(handler);

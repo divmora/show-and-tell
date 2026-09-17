@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const cameraPosition = document.getElementById('cameraPosition');
   const alwaysOnTopOption = document.getElementById('alwaysOnTopOption');
   const diagnosticsOptionCheckbox = document.getElementById('diagnosticsOption');
+  const clickRippleOption = document.getElementById('clickRippleOption');
+  const spotlightOption = document.getElementById('spotlightOption');
   const floatingUiCheckbox = document.getElementById('floatingUi');
   const previewModalCheckbox = document.getElementById('previewModal');
   const storagePersistenceCheckbox = document.getElementById('storagePersistence');
@@ -314,6 +316,8 @@ document.addEventListener('DOMContentLoaded', () => {
     cameraPosition,
     alwaysOnTopOption,
     diagnosticsOptionCheckbox,
+    clickRippleOption,
+    spotlightOption,
     floatingUiCheckbox,
     previewModalCheckbox,
     storagePersistenceCheckbox,
@@ -415,6 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } : false,
         alwaysOnTop: alwaysOnTopOption ? alwaysOnTopOption.checked : true,
         diagnostics: diagnosticsOptionCheckbox ? diagnosticsOptionCheckbox.checked : true,
+        clickRipple: clickRippleOption ? clickRippleOption.checked : true,
+        spotlight: spotlightOption ? spotlightOption.checked : false,
         ui: floatingUiCheckbox.checked,
         previewModal: previewModalCheckbox.checked,
         storage: storagePersistenceCheckbox.checked,

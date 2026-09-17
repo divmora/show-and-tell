@@ -28,6 +28,7 @@ export { storage, StorageManager } from './storage/indexeddb';
 export { formatDuration, formatBytes, parseDurationToMs } from './utils/time';
 export { getPreferredMimeType, getExtensionForMimeType } from './utils/codecs';
 export { PipController } from './ui/pip-controller';
+export { CursorEffectsManager } from './ui/cursor-effects';
 export { uploadRecordingAssets, uploadBlobToPresignedTarget } from './utils/uploader';
 
 /**
