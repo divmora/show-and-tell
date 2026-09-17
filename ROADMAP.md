@@ -78,9 +78,3 @@ This document serves as the **living product roadmap** for ShowAndTell.
       mode: 'dark' | 'light',
     }
     ```
-
-- [ ] **React Component Package (`@show-and-tell/react`)** ([#22](https://github.com/divmora/show-and-tell/issues/22))
-  - Drop-in React hook and component:
-    ```tsx
-    import { useShowAndTell, ShowAndTellWidget } from '@show-and-tell/react';
-    ```

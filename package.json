@@ -5,14 +5,19 @@
   "description": "ShowAndTell - Standalone JavaScript Screen Recording SDK and Demo",
   "workspaces": [
     "packages/sdk",
+    "packages/react",
     "packages/server"
   ],
   "scripts": {
-    "build": "npm run build --workspace=packages/sdk",
+    "build:sdk": "npm run build --workspace=packages/sdk",
+    "build:react": "npm run build --workspace=packages/react",
     "build:server": "npm run build --workspace=packages/server",
+    "build": "npm run build:sdk && npm run build:react",
     "build:pages": "npm run build && node scripts/build-pages.mjs",
-    "test": "npm run test --workspace=packages/sdk",
-    "lint": "tsc --noEmit --project packages/sdk/tsconfig.json && tsc --noEmit --project packages/server/tsconfig.json",
+    "test:sdk": "npm run test --workspace=packages/sdk",
+    "test:react": "npm run test --workspace=packages/react",
+    "test": "npm run test:sdk && npm run test:react",
+    "lint": "tsc --noEmit --project packages/sdk/tsconfig.json && tsc --noEmit --project packages/server/tsconfig.json && tsc --noEmit --project packages/react/tsconfig.json",
     "fmt": "echo 'Formatting check passed'",
     "demo": "node packages/server/dist/index.js",
     "start": "npm run build && npm run build:server && npm run demo"

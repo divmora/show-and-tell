@@ -108,6 +108,33 @@ console.log('Duration:', result.duration, 'seconds');
 result.download('presentation.webm');
 ```
 
+### 3. React Integration (`@show-and-tell/react`)
+
+```bash
+npm install @show-and-tell/react show-and-tell
+```
+
+```tsx
+import { useShowAndTell, ShowAndTellButton, ShowAndTellProvider } from '@show-and-tell/react';
+
+// Drop-in button with live recording badge & timer:
+<ShowAndTellButton 
+  idleText="Record Screen" 
+  recordingText="Stop Recording"
+  onStop={(result) => console.log('Video URL:', result.url)} 
+/>
+
+// Or using the reactive hook with full custom UI controls:
+function CustomRecorder() {
+  const { isRecording, formattedElapsed, startRecording, stopRecording } = useShowAndTell();
+  return (
+    <button onClick={isRecording ? () => stopRecording() : () => startRecording()}>
+      {isRecording ? `REC ${formattedElapsed}` : 'Start'}
+    </button>
+  );
+}
+```
+
 ---
 
 ## 🛠 Configuration Options (`ShowAndTellConfig`)
