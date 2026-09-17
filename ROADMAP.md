@@ -10,7 +10,7 @@ This document serves as the **living product roadmap** for ShowAndTell.
 ## 🎯 Living Roadmap
 
 ### 🎙️ 1. Recording UX & Real-Time Feedback
-- *(Active implementation tasks for live microphone VU metering [#12](https://github.com/divmora/show-and-tell/issues/12), 3-2-1 countdown overlay [#13](https://github.com/divmora/show-and-tell/issues/13), and global keyboard hotkeys [#15](https://github.com/divmora/show-and-tell/issues/15) are tracked directly in GitHub Issues)*
+- *(Active implementation tasks for global keyboard hotkeys [#15](https://github.com/divmora/show-and-tell/issues/15) are tracked directly in GitHub Issues)*
 
 ### ✏️ 2. Screen Annotations & Video Editing
 - *(Active implementation tasks for in-page telestrator drawing tools [#16](https://github.com/divmora/show-and-tell/issues/16) and post-recording video trimmer [#17](https://github.com/divmora/show-and-tell/issues/17) are tracked directly in GitHub Issues)*

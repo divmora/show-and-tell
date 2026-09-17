@@ -4,7 +4,8 @@ import type {
   RecordingSession,
   RecordingResult,
   RecordingState,
-  DurationStats
+  DurationStats,
+  AudioLevelData
 } from 'show-and-tell';
 
 export interface UseShowAndTellOptions extends ShowAndTellConfig {
@@ -39,6 +40,10 @@ export interface UseShowAndTellReturn {
   isWarning: boolean;
   /** True if microphone voiceover is currently muted */
   isMicMuted: boolean;
+  /** Real-time microphone audio volume and discrete 3-tier level */
+  audioLevel: AudioLevelData;
+  /** True when microphone is unmuted but no sound detected for >5s */
+  isSilentMicWarning: boolean;
   /** True if cursor spotlight dimming mode is currently active */
   isSpotlightActive: boolean;
   /** The currently active recording session object, or null */

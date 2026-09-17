@@ -204,6 +204,102 @@ export const WIDGET_STYLES = `
   height: 16px;
   fill: currentColor;
 }
+
+.sat-mic-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.sat-vu-meter {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.sat-vu-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  transition: background-color 0.1s ease, box-shadow 0.1s ease;
+}
+
+.sat-vu-bar-1 {
+  height: 5px;
+}
+
+.sat-vu-bar-2 {
+  height: 9px;
+}
+
+.sat-vu-bar-3 {
+  height: 14px;
+}
+
+/* Level 1: Low (Green) */
+.sat-vu-meter[data-level="1"] .sat-vu-bar-1,
+.sat-vu-meter[data-level="2"] .sat-vu-bar-1,
+.sat-vu-meter[data-level="3"] .sat-vu-bar-1 {
+  background: #22c55e;
+  box-shadow: 0 0 4px rgba(34, 197, 94, 0.6);
+}
+
+/* Level 2: Medium (Amber / Yellow) */
+.sat-vu-meter[data-level="2"] .sat-vu-bar-2,
+.sat-vu-meter[data-level="3"] .sat-vu-bar-2 {
+  background: #eab308;
+  box-shadow: 0 0 5px rgba(234, 179, 8, 0.6);
+}
+
+/* Level 3: Peak / High (Red) */
+.sat-vu-meter[data-level="3"] .sat-vu-bar-3 {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.7);
+}
+
+/* When muted */
+.sat-vu-meter.is-muted .sat-vu-bar {
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.sat-silent-warning {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(24, 24, 27, 0.96);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fbbf24;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+  animation: sat-warning-pulse 2s infinite ease-in-out;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.sat-silent-warning-icon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+@keyframes sat-warning-pulse {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-2px); }
+}
 `;
 
 export const MODAL_STYLES = `

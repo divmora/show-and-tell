@@ -151,7 +151,12 @@ export class RecorderEngine {
           this.micStream = await navigator.mediaDevices.getUserMedia({
             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
           });
-          this.audioMixer = new AudioMixer();
+          const meterConfig = typeof config.audioMeter === 'object' ? config.audioMeter : {};
+          this.audioMixer = new AudioMixer({
+            enabled: config.audioMeter !== false,
+            silentWarning: meterConfig.silentWarning !== false,
+            silentThresholdSeconds: meterConfig.silentThresholdSeconds ?? 5
+          });
           this.audioMixer.mix(undefined, this.micStream);
         } catch (err) {
           console.warn('[ShowAndTell] Microphone capture denied or unavailable for DOM session:', err);
@@ -420,7 +425,12 @@ export class RecorderEngine {
     }
 
     // 3. Audio Mixing
-    this.audioMixer = new AudioMixer();
+    const meterConfig = typeof config.audioMeter === 'object' ? config.audioMeter : {};
+    this.audioMixer = new AudioMixer({
+      enabled: config.audioMeter !== false,
+      silentWarning: meterConfig.silentWarning !== false,
+      silentThresholdSeconds: meterConfig.silentThresholdSeconds ?? 5
+    });
     const mixedAudioTracks = this.audioMixer.mix(this.displayStream, this.micStream);
 
     // 4. Create Combined MediaStream

@@ -151,6 +151,7 @@ function CustomRecorder() {
 | `timeslice` | `number` | `1000` | Chunk interval in ms for streaming slices into `IndexedDB`. |
 | `storage` | `boolean` | `true` | Enable client-side IndexedDB persistence for reload and crash recovery. |
 | `countdown` | `number \| boolean \| CountdownConfig` | `3` | Pre-recording countdown overlay (`3`, `2`, `1`, `Go!`) with audio tick chimes, "Start Now" skip button, and "Cancel" button. Set to `0` or `false` to disable. |
+| `audioMeter` | `boolean \| AudioMeterConfig` | `true` | Real-time 3-segment microphone VU level meter and silent microphone warning alert when mic is unmuted but silent for >5 seconds. |
 | `cursorEffects` | `boolean \| CursorEffectsConfig` | `true` | Cursor interaction feedback (click ripple animations and toggleable cursor spotlight). |
 | `filename` | `string` | `'recording'` | Default base filename for the exported recording file. |
 | `uploadEndpoint` | `string` | `undefined` | Optional server URL to enable 1-click video upload in preview modal. |

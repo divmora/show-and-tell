@@ -163,6 +163,22 @@ export interface CountdownConfig {
   label?: string;
 }
 
+export interface AudioLevelData {
+  /** Normalized audio volume from 0.0 (silence) to 1.0 (peak) */
+  volume: number;
+  /** 3-tier discrete level: 0 (silent), 1 (low/green), 2 (medium/amber), 3 (high/red) */
+  level: 0 | 1 | 2 | 3;
+}
+
+export interface AudioMeterConfig {
+  /** Enable live microphone audio VU meter (default: true) */
+  enabled?: boolean;
+  /** Enable silent microphone warning alert when mic is unmuted but silent for >5 seconds (default: true) */
+  silentWarning?: boolean;
+  /** Silence duration threshold in seconds before triggering silent mic warning (default: 5) */
+  silentThresholdSeconds?: number;
+}
+
 export interface ShowAndTellConfig {
   /** Recording mode: 'pixel' (screen capture, default), 'dom' (in-app session replay), or 'auto' (automatic detection based on device capabilities) */
   mode?: RequestedRecordingMode;
@@ -176,6 +192,8 @@ export interface ShowAndTellConfig {
   countdown?: number | boolean | CountdownConfig;
   /** Picture-in-picture webcam facecam overlay (pixel mode) */
   camera?: boolean | CameraConfig;
+  /** Live microphone VU meter and silent mic detection (default: true when mic is active) */
+  audioMeter?: boolean | AudioMeterConfig;
   /** Always-on-top Document Picture-in-Picture floating window across all windows, applications, and tabs */
   alwaysOnTop?: boolean;
   /** Cursor interaction feedback effects (click ripple animations and cursor spotlight) (default: true) */
@@ -387,6 +405,10 @@ export interface RecordingSession {
   isSpotlightActive: () => boolean;
   /** Trigger a click ripple animation at specified viewport coordinates */
   triggerClickRipple: (x: number, y: number, color?: string) => void;
+  /** Get current audio meter level data */
+  getAudioLevel?: () => AudioLevelData;
+  /** Check if silent microphone warning is currently triggered */
+  isSilentMicWarningActive?: () => boolean;
   /** Subscribe to session events */
   on: (event: SessionEventName, handler: (...args: any[]) => void) => () => void;
   /** Unsubscribe from session events */
@@ -404,6 +426,8 @@ export type SessionEventName =
   | 'chunk'
   | 'micMuteChange'
   | 'spotlightChange'
+  | 'audioLevel'
+  | 'silentMicWarning'
   | 'error';
 
 export interface SessionMetadata {

@@ -1,3 +1,5 @@
+import { AudioMeterOptions, AudioLevelMeter } from './audio-meter';
+
 export class AudioMixer {
   private audioContext?: AudioContext;
   private destinationNode?: MediaStreamAudioDestinationNode;
@@ -8,6 +10,13 @@ export class AudioMixer {
 
   private micStream?: MediaStream;
   private isMicMutedState: boolean = false;
+  private audioMeter?: AudioLevelMeter;
+
+  constructor(private meterOptions: AudioMeterOptions = {}) {}
+
+  getAudioMeter(): AudioLevelMeter | undefined {
+    return this.audioMeter;
+  }
 
   /**
    * Initializes Web Audio context and mixes display audio with microphone audio.
@@ -24,6 +33,11 @@ export class AudioMixer {
     // If only mic audio exists and no display audio, return mic track
     if (displayAudioTracks.length === 0 && micAudioTracks.length > 0) {
       this.micStream = micStream;
+      if (this.meterOptions.enabled !== false && micStream) {
+        try {
+          this.audioMeter = new AudioLevelMeter(micStream, this.meterOptions);
+        } catch {}
+      }
       return micAudioTracks;
     }
 
@@ -57,6 +71,12 @@ export class AudioMixer {
       this.micSourceNode.connect(this.micGainNode);
       this.micGainNode.connect(this.destinationNode);
 
+      if (this.meterOptions.enabled !== false && micStream) {
+        try {
+          this.audioMeter = new AudioLevelMeter(micStream, this.meterOptions, this.audioContext);
+        } catch {}
+      }
+
       return this.destinationNode.stream.getAudioTracks();
     }
 
@@ -68,6 +88,7 @@ export class AudioMixer {
    */
   setMicMuted(muted: boolean): void {
     this.isMicMutedState = muted;
+    this.audioMeter?.setMuted(muted);
     if (this.micGainNode) {
       this.micGainNode.gain.value = muted ? 0 : 1;
     }
@@ -95,6 +116,10 @@ export class AudioMixer {
    * Cleanup audio context and nodes.
    */
   destroy(): void {
+    if (this.audioMeter) {
+      this.audioMeter.destroy();
+      this.audioMeter = undefined;
+    }
     if (this.micSourceNode) {
       this.micSourceNode.disconnect();
       this.micSourceNode = undefined;

@@ -1,4 +1,5 @@
 import { 
+  AudioLevelData,
   DiagnosticEntry,
   DiscontinueReason, 
   DomRecordingEvent,
@@ -72,6 +73,13 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
     this.durationTracker.on('tick', (stats) => this.emit('tick', stats));
     this.durationTracker.on('warning', (stats) => this.emit('warning', stats));
     this.durationTracker.on('timeout', (stats) => this.emit('maxDurationReached', stats));
+
+    // Forward audio meter events
+    const meter = this.audioMixer?.getAudioMeter();
+    if (meter) {
+      meter.on('audioLevel', (data) => this.emit('audioLevel', data));
+      meter.on('silentMicWarning', (active) => this.emit('silentMicWarning', active));
+    }
   }
 
   getStats(): DurationStats {
@@ -98,6 +106,7 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
     if (this.state !== 'recording') return;
     this.state = 'paused';
     this.durationTracker.pause();
+    this.audioMixer?.getAudioMeter()?.setPaused(true);
     this.onPauseRequest();
     this.emit('pause');
   }
@@ -106,6 +115,7 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
     if (this.state !== 'paused') return;
     this.state = 'recording';
     this.durationTracker.resume();
+    this.audioMixer?.getAudioMeter()?.setPaused(false);
     this.onResumeRequest();
     this.emit('resume');
   }
@@ -133,6 +143,14 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
 
   isMicMuted(): boolean {
     return this.audioMixer ? this.audioMixer.isMicMuted() : false;
+  }
+
+  getAudioLevel(): AudioLevelData {
+    return this.audioMixer?.getAudioMeter()?.getLevel() || { volume: 0, level: 0 };
+  }
+
+  isSilentMicWarningActive(): boolean {
+    return this.audioMixer?.getAudioMeter()?.isSilentWarning() || false;
   }
 
   toggleSpotlight(): boolean {

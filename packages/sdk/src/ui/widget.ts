@@ -23,8 +23,12 @@ export class RecordingWidget {
   private stopBtn?: HTMLButtonElement;
   private pipBtn?: HTMLButtonElement;
   private spotlightBtn?: HTMLButtonElement;
+  private vuMeterEl?: HTMLElement;
+  private silentWarningEl?: HTMLElement;
   private unsubscribeTick?: () => void;
   private unsubscribeSpotlight?: () => void;
+  private unsubscribeAudioLevel?: () => void;
+  private unsubscribeSilentWarning?: () => void;
 
   public onPopoutRequest?: () => void;
 
@@ -50,6 +54,10 @@ export class RecordingWidget {
     this.containerEl = document.createElement('div');
     this.containerEl.className = 'sat-widget-container';
     this.containerEl.innerHTML = `
+      <div class="sat-silent-warning" style="display: none;">
+        <svg class="sat-silent-warning-icon" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        <span>Microphone seems silent</span>
+      </div>
       <div class="sat-drag-handle" title="Drag to reposition">
         ${ICONS.drag}
       </div>
@@ -63,9 +71,16 @@ export class RecordingWidget {
       <div class="sat-divider"></div>
       <div class="sat-btn-group">
         ${this.hasMic ? `
-          <button class="sat-btn sat-btn-mic" title="Mute/Unmute Mic">
-            ${ICONS.micOn}
-          </button>
+          <div class="sat-mic-wrapper">
+            <button class="sat-btn sat-btn-mic" title="Mute/Unmute Mic">
+              ${ICONS.micOn}
+            </button>
+            <div class="sat-vu-meter" title="Microphone Level" data-level="0">
+              <span class="sat-vu-bar sat-vu-bar-1"></span>
+              <span class="sat-vu-bar sat-vu-bar-2"></span>
+              <span class="sat-vu-bar sat-vu-bar-3"></span>
+            </div>
+          </div>
         ` : ''}
         <button class="sat-btn sat-btn-pause" title="Pause/Resume">
           ${ICONS.pause}
@@ -93,6 +108,14 @@ export class RecordingWidget {
     this.pipBtn = this.containerEl.querySelector('.sat-btn-pip') as HTMLButtonElement;
     if (this.hasMic) {
       this.micBtn = this.containerEl.querySelector('.sat-btn-mic') as HTMLButtonElement;
+      this.vuMeterEl = this.containerEl.querySelector('.sat-vu-meter') as HTMLElement;
+      this.silentWarningEl = this.containerEl.querySelector('.sat-silent-warning') as HTMLElement;
+      if (this.vuMeterEl) {
+        this.vuMeterEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.micBtn?.click();
+        });
+      }
     }
 
     if (this.session.isSpotlightActive?.()) {
@@ -140,6 +163,21 @@ export class RecordingWidget {
         this.micBtn!.innerHTML = isMuted ? ICONS.micOff : ICONS.micOn;
         this.micBtn!.title = isMuted ? 'Unmute Mic' : 'Mute Mic';
         this.micBtn!.classList.toggle('sat-btn-active-toggle', isMuted);
+        this.vuMeterEl?.classList.toggle('is-muted', isMuted);
+        if (isMuted) {
+          this.updateAudioLevel(0);
+          this.updateSilentWarning(false);
+        }
+      });
+    }
+
+    if (this.hasMic) {
+      this.unsubscribeAudioLevel = this.session.on('audioLevel', (data: any) => {
+        this.updateAudioLevel(data?.level ?? 0);
+      });
+
+      this.unsubscribeSilentWarning = this.session.on('silentMicWarning', (active: boolean) => {
+        this.updateSilentWarning(active);
       });
     }
 
@@ -265,6 +303,16 @@ export class RecordingWidget {
     }
   }
 
+  private updateAudioLevel(level: 0 | 1 | 2 | 3): void {
+    if (!this.vuMeterEl) return;
+    this.vuMeterEl.setAttribute('data-level', String(level));
+  }
+
+  private updateSilentWarning(active: boolean): void {
+    if (!this.silentWarningEl) return;
+    this.silentWarningEl.style.display = active ? 'inline-flex' : 'none';
+  }
+
   destroy(): void {
     if (this.unsubscribeTick) {
       this.unsubscribeTick();
@@ -273,6 +321,14 @@ export class RecordingWidget {
     if (this.unsubscribeSpotlight) {
       this.unsubscribeSpotlight();
       this.unsubscribeSpotlight = undefined;
+    }
+    if (this.unsubscribeAudioLevel) {
+      this.unsubscribeAudioLevel();
+      this.unsubscribeAudioLevel = undefined;
+    }
+    if (this.unsubscribeSilentWarning) {
+      this.unsubscribeSilentWarning();
+      this.unsubscribeSilentWarning = undefined;
     }
     if (this.hostElement && this.hostElement.parentNode) {
       this.hostElement.parentNode.removeChild(this.hostElement);

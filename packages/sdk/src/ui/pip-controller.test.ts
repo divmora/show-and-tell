@@ -74,6 +74,21 @@ describe('PipController', () => {
     const micBtn = mockPipDoc.querySelector('.sat-pip-btn-mic') as HTMLButtonElement;
     expect(micBtn).not.toBeNull();
 
+    const vuMeter = mockPipDoc.querySelector('.sat-pip-vu-meter') as HTMLElement;
+    const silentAlert = mockPipDoc.querySelector('.sat-pip-silent-alert') as HTMLElement;
+    expect(vuMeter).not.toBeNull();
+    expect(silentAlert).not.toBeNull();
+    expect(vuMeter.classList.contains('is-muted')).toBe(true);
+
+    controller.updateAudioLevel(2);
+    expect(vuMeter.getAttribute('data-level')).toBe('2');
+
+    controller.updateSilentWarning(true);
+    expect(silentAlert.style.display).toBe('inline-flex');
+
+    controller.updateSilentWarning(false);
+    expect(silentAlert.style.display).toBe('none');
+
     // Close window
     controller.close();
     expect(controller.isActive()).toBe(false);

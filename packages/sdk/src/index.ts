@@ -22,6 +22,7 @@ export * from './dom';
 export * from './diagnostics';
 export * from './camera';
 export { AudioMixer } from './core/audio-mixer';
+export { AudioLevelMeter } from './core/audio-meter';
 export { DurationTracker } from './core/duration-tracker';
 export { RecorderEngine, recorderEngine } from './core/recorder';
 export { storage, StorageManager } from './storage/indexeddb';

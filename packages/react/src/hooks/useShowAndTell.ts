@@ -5,7 +5,8 @@ import {
   type RecordingResult,
   type RecordingState,
   type DurationStats,
-  type ShowAndTellConfig
+  type ShowAndTellConfig,
+  type AudioLevelData
 } from 'show-and-tell';
 import type { UseShowAndTellOptions, UseShowAndTellReturn } from '../types';
 
@@ -30,6 +31,8 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
   const [isWarning, setIsWarning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isMicMuted, setIsMicMuted] = useState(false);
+  const [audioLevel, setAudioLevel] = useState<AudioLevelData>({ volume: 0, level: 0 });
+  const [isSilentMicWarning, setIsSilentMicWarning] = useState(false);
   const [isSpotlightActive, setIsSpotlightActive] = useState(false);
   const [activeSession, setActiveSession] = useState<RecordingSession | null>(null);
   const [lastResult, setLastResult] = useState<RecordingResult | null>(null);
@@ -101,6 +104,14 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       setIsSpotlightActive(Boolean(active));
     });
 
+    const offAudioLevel = session.on('audioLevel', (lvl: AudioLevelData) => {
+      setAudioLevel(lvl);
+    });
+
+    const offSilentWarning = session.on('silentMicWarning', (active: boolean) => {
+      setIsSilentMicWarning(Boolean(active));
+    });
+
     const offStop = session.on('stop', (result: RecordingResult) => {
       setLastResult(result);
       setState('stopped');
@@ -122,6 +133,8 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       offResume();
       offMic();
       offSpotlight();
+      offAudioLevel();
+      offSilentWarning();
       offStop();
       offError();
     };
@@ -268,6 +281,8 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     progressRatio,
     isWarning,
     isMicMuted,
+    audioLevel,
+    isSilentMicWarning,
     isSpotlightActive,
     activeSession,
     lastResult,

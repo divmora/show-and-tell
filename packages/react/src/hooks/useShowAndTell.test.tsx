@@ -301,4 +301,33 @@ describe('useShowAndTell', () => {
 
     expect(mockSession.stop).toHaveBeenCalled();
   });
+
+  it('updates audioLevel and isSilentMicWarning when session emits audio meter events', async () => {
+    const mockSession = createMockSession();
+    vi.spyOn(ShowAndTell, 'startRecording').mockResolvedValue(mockSession as any);
+
+    const { result } = renderHook(() => useShowAndTell());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    expect(result.current.audioLevel).toEqual({ volume: 0, level: 0 });
+    expect(result.current.isSilentMicWarning).toBe(false);
+
+    act(() => {
+      mockSession.emit('audioLevel', { volume: 0.45, level: 2 });
+    });
+    expect(result.current.audioLevel).toEqual({ volume: 0.45, level: 2 });
+
+    act(() => {
+      mockSession.emit('silentMicWarning', true);
+    });
+    expect(result.current.isSilentMicWarning).toBe(true);
+
+    act(() => {
+      mockSession.emit('silentMicWarning', false);
+    });
+    expect(result.current.isSilentMicWarning).toBe(false);
+  });
 });

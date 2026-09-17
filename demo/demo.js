@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const alwaysOnTopOption = document.getElementById('alwaysOnTopOption');
   const diagnosticsOptionCheckbox = document.getElementById('diagnosticsOption');
   const countdownOption = document.getElementById('countdownOption');
+  const audioMeterOption = document.getElementById('audioMeterOption');
   const clickRippleOption = document.getElementById('clickRippleOption');
   const spotlightOption = document.getElementById('spotlightOption');
   const floatingUiCheckbox = document.getElementById('floatingUi');
@@ -97,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const aot = alwaysOnTopOption ? alwaysOnTopOption.checked : true;
     const diag = diagnosticsOptionCheckbox ? diagnosticsOptionCheckbox.checked : true;
     const countdown = countdownOption ? countdownOption.checked : true;
+    const audioMeter = audioMeterOption ? audioMeterOption.checked : true;
     const ui = floatingUiCheckbox ? floatingUiCheckbox.checked : true;
     const preview = previewModalCheckbox ? previewModalCheckbox.checked : true;
     const storage = storagePersistenceCheckbox ? storagePersistenceCheckbox.checked : true;
@@ -166,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
     code += `  alwaysOnTop: ${aot}, // OS-level floating PiP toolbar across windows & tabs\n`;
     code += `  diagnostics: ${diag}, // Developer console & network breadcrumbs\n`;
     code += `  countdown: ${countdown ? 3 : 0}, // Pre-recording 3-2-1 countdown overlay with audio ticks\n`;
+    code += `  audioMeter: ${audioMeter}, // Real-time microphone VU meter & silent mic alert\n`;
     code += `  ui: ${ui}, // Floating draggable recording toolbar\n`;
     code += `  previewModal: ${preview}, // Post-recording playback & export modal\n`;
     code += `  storage: ${storage}, // IndexedDB crash & reload recovery\n`;
@@ -320,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
     alwaysOnTopOption,
     diagnosticsOptionCheckbox,
     countdownOption,
+    audioMeterOption,
     clickRippleOption,
     spotlightOption,
     floatingUiCheckbox,
@@ -424,6 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alwaysOnTop: alwaysOnTopOption ? alwaysOnTopOption.checked : true,
         diagnostics: diagnosticsOptionCheckbox ? diagnosticsOptionCheckbox.checked : true,
         countdown: countdownOption ? (countdownOption.checked ? 3 : 0) : 3,
+        audioMeter: audioMeterOption ? audioMeterOption.checked : true,
         clickRipple: clickRippleOption ? clickRippleOption.checked : true,
         spotlight: spotlightOption ? spotlightOption.checked : false,
         ui: floatingUiCheckbox.checked,

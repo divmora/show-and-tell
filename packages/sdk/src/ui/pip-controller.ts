@@ -39,6 +39,10 @@ export class PipController {
   private micBtn?: HTMLButtonElement;
   private camBtn?: HTMLButtonElement;
   private containerEl?: HTMLElement;
+  private vuMeterEl?: HTMLElement;
+  private silentAlertEl?: HTMLElement;
+  private unsubscribeAudioLevel?: () => void;
+  private unsubscribeSilentWarning?: () => void;
 
   /**
    * Check whether Document Picture-in-Picture is supported by the current browser environment.
@@ -262,6 +266,56 @@ export class PipController {
         background-color: #f59e0b;
         animation: none;
       }
+      .sat-pip-mic-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        position: relative;
+      }
+      .sat-pip-vu-meter {
+        display: inline-flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 14px;
+        padding: 0 1px;
+      }
+      .sat-pip-vu-bar {
+        width: 2.5px;
+        border-radius: 1px;
+        background: rgba(255, 255, 255, 0.2);
+        transition: background-color 0.1s ease;
+      }
+      .sat-pip-vu-bar-1 { height: 4px; }
+      .sat-pip-vu-bar-2 { height: 8px; }
+      .sat-pip-vu-bar-3 { height: 13px; }
+
+      .sat-pip-vu-meter[data-level="1"] .sat-pip-vu-bar-1,
+      .sat-pip-vu-meter[data-level="2"] .sat-pip-vu-bar-1,
+      .sat-pip-vu-meter[data-level="3"] .sat-pip-vu-bar-1 {
+        background: #22c55e;
+      }
+      .sat-pip-vu-meter[data-level="2"] .sat-pip-vu-bar-2,
+      .sat-pip-vu-meter[data-level="3"] .sat-pip-vu-bar-2 {
+        background: #eab308;
+      }
+      .sat-pip-vu-meter[data-level="3"] .sat-pip-vu-bar-3 {
+        background: #ef4444;
+      }
+      .sat-pip-vu-meter.is-muted .sat-pip-vu-bar {
+        background: rgba(255, 255, 255, 0.08) !important;
+      }
+      .sat-pip-silent-alert {
+        display: none;
+        align-items: center;
+        gap: 3px;
+        font-size: 10px;
+        font-weight: 600;
+        color: #fbbf24;
+        background: rgba(245, 158, 11, 0.15);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 4px;
+        padding: 1px 5px;
+      }
     `;
     doc.head.appendChild(styleEl);
 
@@ -302,9 +356,17 @@ export class PipController {
             </button>
           ` : ''}
           ${hasMic ? `
-            <button class="sat-pip-btn sat-pip-btn-mic" title="Mute/Unmute Mic">
-              ${PIP_ICONS.micOn}
-            </button>
+            <div class="sat-pip-mic-wrap">
+              <button class="sat-pip-btn sat-pip-btn-mic" title="Mute/Unmute Mic">
+                ${PIP_ICONS.micOn}
+              </button>
+              <div class="sat-pip-vu-meter" title="Microphone Level" data-level="0">
+                <span class="sat-pip-vu-bar sat-pip-vu-bar-1"></span>
+                <span class="sat-pip-vu-bar sat-pip-vu-bar-2"></span>
+                <span class="sat-pip-vu-bar sat-pip-vu-bar-3"></span>
+              </div>
+            </div>
+            <div class="sat-pip-silent-alert" title="Microphone seems silent">⚠️ Silent Mic</div>
           ` : ''}
           <button class="sat-pip-btn sat-pip-btn-pause" title="Pause/Resume">
             ${PIP_ICONS.pause}
@@ -327,9 +389,20 @@ export class PipController {
     this.pauseBtn = rootEl.querySelector('.sat-pip-btn-pause') as HTMLButtonElement;
     this.micBtn = rootEl.querySelector('.sat-pip-btn-mic') as HTMLButtonElement;
     this.camBtn = rootEl.querySelector('.sat-pip-btn-cam') as HTMLButtonElement;
+    this.vuMeterEl = rootEl.querySelector('.sat-pip-vu-meter') as HTMLElement;
+    this.silentAlertEl = rootEl.querySelector('.sat-pip-silent-alert') as HTMLElement;
     const stopBtn = rootEl.querySelector('.sat-pip-btn-stop') as HTMLButtonElement;
     const dockBtn = rootEl.querySelector('.sat-pip-btn-dock') as HTMLButtonElement;
     const shapeBtn = rootEl.querySelector('.sat-pip-btn-shape') as HTMLButtonElement;
+
+    if (hasMic) {
+      this.unsubscribeAudioLevel = options.session.on('audioLevel', (data: any) => {
+        this.updateAudioLevel(data?.level ?? 0);
+      });
+      this.unsubscribeSilentWarning = options.session.on('silentMicWarning', (active: boolean) => {
+        this.updateSilentWarning(active);
+      });
+    }
 
     if (hasCamera) {
       this.videoEl = rootEl.querySelector('video') as HTMLVideoElement;
@@ -404,6 +477,11 @@ export class PipController {
       if (this.micBtn) {
         this.micBtn.innerHTML = this.isMutedMic ? PIP_ICONS.micOff : PIP_ICONS.micOn;
       }
+      this.vuMeterEl?.classList.toggle('is-muted', this.isMutedMic);
+      if (this.isMutedMic) {
+        this.updateAudioLevel(0);
+        this.updateSilentWarning(false);
+      }
       options.onToggleMic?.();
     });
 
@@ -454,6 +532,21 @@ export class PipController {
     if (this.micBtn) {
       this.micBtn.innerHTML = isMuted ? PIP_ICONS.micOff : PIP_ICONS.micOn;
     }
+    this.vuMeterEl?.classList.toggle('is-muted', isMuted);
+    if (isMuted) {
+      this.updateAudioLevel(0);
+      this.updateSilentWarning(false);
+    }
+  }
+
+  updateAudioLevel(level: 0 | 1 | 2 | 3): void {
+    if (!this.vuMeterEl) return;
+    this.vuMeterEl.setAttribute('data-level', String(level));
+  }
+
+  updateSilentWarning(active: boolean): void {
+    if (!this.silentAlertEl) return;
+    this.silentAlertEl.style.display = active ? 'inline-flex' : 'none';
   }
 
   updateCameraMute(isMuted: boolean): void {
@@ -472,12 +565,22 @@ export class PipController {
       this.unsubscribeTick();
       this.unsubscribeTick = undefined;
     }
+    if (this.unsubscribeAudioLevel) {
+      this.unsubscribeAudioLevel();
+      this.unsubscribeAudioLevel = undefined;
+    }
+    if (this.unsubscribeSilentWarning) {
+      this.unsubscribeSilentWarning();
+      this.unsubscribeSilentWarning = undefined;
+    }
     this.pipWindow = null;
     this.videoEl = undefined;
     this.timerEl = undefined;
     this.pauseBtn = undefined;
     this.micBtn = undefined;
     this.camBtn = undefined;
+    this.vuMeterEl = undefined;
+    this.silentAlertEl = undefined;
     this.containerEl = undefined;
   }
 
