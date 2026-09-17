@@ -1,28 +1,28 @@
 # ShowAndTell Product Roadmap
 
 This document serves as the **living product roadmap** for ShowAndTell.
-- **Adding Items**: Whenever a new capability, enhancement, or edge-case improvement is identified for the future, add it here under the appropriate category.
-- **Removing Items**: Once a feature is fully implemented, verified, and committed, **remove it from this roadmap**.
+- **Adding Items**: Whenever a new capability, enhancement, or edge-case improvement is identified for the future, add it here under the appropriate category and open a corresponding GitHub Issue.
+- **Removing Items**: Once a feature is fully implemented, verified, and committed, **remove it from this roadmap** and close the linked issue.
 
 ---
 
 ## 1. Recording UX & Real-Time Feedback
 
-- [ ] **Live Microphone Audio Level Meter (VU Meter)**
+- [ ] **Live Microphone Audio Level Meter (VU Meter)** ([#12](https://github.com/divmora/show-and-tell/issues/12))
   - Add a real-time 3-segment pulsating audio level indicator next to the microphone icon on the floating toolbar (`RecordingWidget`) and Document PiP window (`PipController`).
   - Utilizes Web Audio `AnalyserNode` connected to `micSourceNode` to compute RMS volume.
   - Alert the user if the microphone is unmuted but audio level stays near zero for >5 seconds ("Silent Mic Warning").
 
-- [ ] **Pre-Recording 3-2-1 Countdown Overlay**
+- [ ] **Pre-Recording 3-2-1 Countdown Overlay** ([#13](https://github.com/divmora/show-and-tell/issues/13))
   - Configurable countdown timer (`countdown: 3`) after screen selection before recording actually starts.
   - Smooth animated circular countdown numbers (`3`, `2`, `1`, `Go!`) with synthetic audio tick.
   - Includes a "Start Immediately" skip button to jump straight into recording.
 
-- [ ] **Click Ripple & Cursor Spotlight**
+- [ ] **Click Ripple & Cursor Spotlight** ([#14](https://github.com/divmora/show-and-tell/issues/14))
   - Transient radial pulse animations around mouse clicks during recording so viewers can clearly track user interactions in pixel screen recordings.
   - Optional spotlight dimming mode for focusing on specific UI elements.
 
-- [ ] **Global Keyboard Shortcuts (Hotkeys)**
+- [ ] **Global Keyboard Shortcuts (Hotkeys)** ([#15](https://github.com/divmora/show-and-tell/issues/15))
   - Configurable hotkeys (e.g., `Alt+Shift+R` to Start/Stop, `Alt+Shift+P` to Pause/Resume, `Alt+Shift+C` to toggle camera bubble).
   - Allows seamless control during full-screen apps and presentations without touching the toolbar.
 
@@ -30,7 +30,7 @@ This document serves as the **living product roadmap** for ShowAndTell.
 
 ## 2. Screen Annotations & Video Editing
 
-- [ ] **Screen Annotation / Telestrator (Drawing Tools)**
+- [ ] **Screen Annotation / Telestrator (Drawing Tools)** ([#16](https://github.com/divmora/show-and-tell/issues/16))
   - In-page transparent canvas overlay allowing users to draw directly on screen while recording:
     - Freehand pen / marker with color selection (Red, Yellow, Blue, Green).
     - Vector arrow pointer tool for calling out specific buttons and UI areas.
@@ -38,7 +38,7 @@ This document serves as the **living product roadmap** for ShowAndTell.
     - 1-click Clear / Eraser button.
   - Captured natively in Pixel mode and serialized as vector drawing events in DOM mode.
 
-- [ ] **Post-Recording Video Trimmer**
+- [ ] **Post-Recording Video Trimmer** ([#17](https://github.com/divmora/show-and-tell/issues/17))
   - Interactive `[In]` and `[Out]` trim handles on the video timeline scrubber in `PreviewModal`.
   - Display trimmed duration in real time (e.g. `Original: 01:00 | Trimmed: 00:42`).
   - Client-side trimming upon export so users can clip unwanted beginnings or endings without external video editors.
@@ -47,11 +47,11 @@ This document serves as the **living product roadmap** for ShowAndTell.
 
 ## 3. Session Replay & Diagnostics
 
-- [ ] **Skip Inactivity in Session Replay**
+- [ ] **Skip Inactivity in Session Replay** ([#18](https://github.com/divmora/show-and-tell/issues/18))
   - Replay viewer toggle `[x] Skip Inactivity` in `DomReplayer` and standalone HTML player.
   - Fast-forwards through periods of idle time / silence (>2 seconds with no user events) at 8x speed.
 
-- [ ] **Full Network Request & Response Inspector (HAR-lite)**
+- [ ] **Full Network Request & Response Inspector (HAR-lite)** ([#19](https://github.com/divmora/show-and-tell/issues/19))
   - Expand `DiagnosticsCollector` to capture sanitized HTTP request headers, request JSON bodies, response status, and response bodies (up to 32 KB).
   - Display interactive Network tab inside the Diagnostics drawer of `PreviewModal` with method, status badge, headers, and formatted JSON viewer.
   - Automatic redaction of sensitive credentials (`Authorization: Bearer ***`, `Cookie`, `x-api-key`).
@@ -60,7 +60,7 @@ This document serves as the **living product roadmap** for ShowAndTell.
 
 ## 4. Storage & Cloud Uploads
 
-- [ ] **IndexedDB Auto-Pruning & Storage Budget Cap**
+- [ ] **IndexedDB Auto-Pruning & Storage Budget Cap** ([#20](https://github.com/divmora/show-and-tell/issues/20))
   - Automatic TTL expiration for recovered/unsaved sessions older than 7 days.
   - Configurable storage budget (e.g., max 300 MB) with LRU eviction to prevent local disk bloat over long periods of usage.
 
@@ -68,7 +68,7 @@ This document serves as the **living product roadmap** for ShowAndTell.
 
 ## 5. Developer Ecosystem & Theming
 
-- [ ] **Custom Theming & White-Label Styling**
+- [ ] **Custom Theming & White-Label Styling** ([#21](https://github.com/divmora/show-and-tell/issues/21))
   - Allow developers to customize toolbar and modal appearance to match their brand:
     ```ts
     theme: {
@@ -79,7 +79,7 @@ This document serves as the **living product roadmap** for ShowAndTell.
     }
     ```
 
-- [ ] **React Component Package (`@show-and-tell/react`)**
+- [ ] **React Component Package (`@show-and-tell/react`)** ([#22](https://github.com/divmora/show-and-tell/issues/22))
   - Drop-in React hook and component:
     ```tsx
     import { useShowAndTell, ShowAndTellWidget } from '@show-and-tell/react';
