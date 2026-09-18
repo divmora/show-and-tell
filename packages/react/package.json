@@ -1,6 +1,6 @@
 {
   "name": "@divmora/show-and-tell-react",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Drop-in React hooks and components for ShowAndTell screen recording and session replay",
   "publishConfig": {
     "access": "public"
