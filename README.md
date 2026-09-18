@@ -80,11 +80,11 @@ ShowAndTell provides lightweight client-side screen capture designed for privacy
 ### 2. NPM / Modern ES Module Import
 
 ```bash
-npm install show-and-tell
+npm install @divmora/show-and-tell
 ```
 
 ```typescript
-import { ShowAndTell } from 'show-and-tell';
+import { ShowAndTell } from '@divmora/show-and-tell';
 
 const session = await ShowAndTell.startRecording({
   maxDuration: '2m', // Supports strings like '30s', '2m', '5min', '1h'
@@ -108,14 +108,14 @@ console.log('Duration:', result.duration, 'seconds');
 result.download('presentation.webm');
 ```
 
-### 3. React Integration (`@show-and-tell/react`)
+### 3. React Integration (`@divmora/show-and-tell-react`)
 
 ```bash
-npm install @show-and-tell/react show-and-tell
+npm install @divmora/show-and-tell-react @divmora/show-and-tell
 ```
 
 ```tsx
-import { useShowAndTell, ShowAndTellButton, ShowAndTellProvider } from '@show-and-tell/react';
+import { useShowAndTell, ShowAndTellButton, ShowAndTellProvider } from '@divmora/show-and-tell-react';
 
 // Drop-in button with live recording badge & timer:
 <ShowAndTellButton 

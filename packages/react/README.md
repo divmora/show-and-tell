@@ -1,8 +1,8 @@
-# @show-and-tell/react
+# @divmora/show-and-tell-react
 
 > Drop-in React hooks and components for [ShowAndTell](https://github.com/divmora/show-and-tell) screen recording and session replay.
 
-[![npm version](https://img.shields.io/npm/v/@show-and-tell/react.svg)](https://www.npmjs.com/package/@show-and-tell/react)
+[![npm version](https://img.shields.io/npm/v/@divmora/show-and-tell-react.svg)](https://www.npmjs.com/package/@divmora/show-and-tell-react)
 [![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-blue.svg)](https://github.com/divmora/show-and-tell/blob/main/LICENSE)
 
 ---
@@ -21,11 +21,11 @@
 ## Installation
 
 ```bash
-npm install @show-and-tell/react show-and-tell
+npm install @divmora/show-and-tell-react @divmora/show-and-tell
 # or
-pnpm add @show-and-tell/react show-and-tell
+pnpm add @divmora/show-and-tell-react @divmora/show-and-tell
 # or
-yarn add @show-and-tell/react show-and-tell
+yarn add @divmora/show-and-tell-react @divmora/show-and-tell
 ```
 
 ---
@@ -36,7 +36,7 @@ yarn add @show-and-tell/react show-and-tell
 
 ```tsx
 import React from 'react';
-import { useShowAndTell } from '@show-and-tell/react';
+import { useShowAndTell } from '@divmora/show-and-tell-react';
 
 export function ScreenRecordToolbar() {
   const {
@@ -85,7 +85,7 @@ export function ScreenRecordToolbar() {
 Drop in a ready-made recording button with built-in status badge, pulsing recording indicator, and live duration timer:
 
 ```tsx
-import { ShowAndTellButton } from '@show-and-tell/react';
+import { ShowAndTellButton } from '@divmora/show-and-tell-react';
 
 export function Header() {
   return (
@@ -124,7 +124,7 @@ Wrap your application to share recording state across disparate components:
 
 ```tsx
 // app/providers.tsx or index.tsx
-import { ShowAndTellProvider } from '@show-and-tell/react';
+import { ShowAndTellProvider } from '@divmora/show-and-tell-react';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -144,7 +144,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 Access recording state in any child component:
 
 ```tsx
-import { useShowAndTellContext } from '@show-and-tell/react';
+import { useShowAndTellContext } from '@divmora/show-and-tell-react';
 
 export function NavigationRecorderBadge() {
   const { isRecording, formattedElapsed } = useShowAndTellContext();
@@ -160,7 +160,7 @@ export function NavigationRecorderBadge() {
 ### 4. Floating / Embedded `<ShowAndTellWidget />`
 
 ```tsx
-import { ShowAndTellWidget } from '@show-and-tell/react';
+import { ShowAndTellWidget } from '@divmora/show-and-tell-react';
 
 export function FeedbackModal() {
   return (

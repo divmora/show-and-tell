@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { ShowAndTellProvider, useShowAndTellContext } from '../context/ShowAndTellContext';
 import { ShowAndTellButton } from './ShowAndTellButton';
 import { ShowAndTellWidget } from './ShowAndTellWidget';
-import { ShowAndTell } from 'show-and-tell';
+import { ShowAndTell } from '@divmora/show-and-tell';
 
 function createMockSession() {
   const listeners = new Map<string, Function[]>();

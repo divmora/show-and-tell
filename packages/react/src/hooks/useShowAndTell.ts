@@ -11,7 +11,7 @@ import {
   type StoragePruneOptions,
   type StoragePruneResult,
   type StorageStats
-} from 'show-and-tell';
+} from '@divmora/show-and-tell';
 import type { UseShowAndTellOptions, UseShowAndTellReturn } from '../types';
 
 /**

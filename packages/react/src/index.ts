@@ -32,4 +32,4 @@ export {
   type PresignedUploadConfig,
   type PresignedUploadResult,
   type RecordingMode
-} from 'show-and-tell';
+} from '@divmora/show-and-tell';

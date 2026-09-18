@@ -25,7 +25,7 @@ export default defineConfig({
         'react-dom',
         'react/jsx-runtime',
         'react/jsx-dev-runtime',
-        'show-and-tell'
+        '@divmora/show-and-tell'
       ],
       output: {
         banner: "'use client';\n",
@@ -33,7 +33,7 @@ export default defineConfig({
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
-          'show-and-tell': 'ShowAndTell'
+          '@divmora/show-and-tell': 'ShowAndTell'
         }
       },
       onwarn(warning, warn) {

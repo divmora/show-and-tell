@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useShowAndTell } from './useShowAndTell';
-import { ShowAndTell } from 'show-and-tell';
+import { ShowAndTell } from '@divmora/show-and-tell';
 
 function createMockSession() {
   const listeners = new Map<string, Function[]>();

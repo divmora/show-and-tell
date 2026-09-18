@@ -12,7 +12,7 @@ import type {
   StoragePruneOptions,
   StoragePruneResult,
   StorageStats
-} from 'show-and-tell';
+} from '@divmora/show-and-tell';
 
 export type { ThemeConfig, ThemeMode, StorageConfig, StoragePruneOptions, StoragePruneResult, StorageStats };
 

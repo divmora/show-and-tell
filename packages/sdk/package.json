@@ -1,7 +1,10 @@
 {
-  "name": "show-and-tell",
+  "name": "@divmora/show-and-tell",
   "version": "0.2.0",
   "description": "Standalone JavaScript Screen Recording SDK with Audio Mixing, Reload Resilience & Max Duration Control",
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "./dist/show-and-tell.cjs.js",
   "module": "./dist/show-and-tell.esm.js",
   "browser": "./dist/show-and-tell.min.js",

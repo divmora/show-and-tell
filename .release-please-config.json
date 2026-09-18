@@ -3,7 +3,7 @@
   "packages": {
     ".": {
       "release-type": "node",
-      "package-name": "show-and-tell",
+      "package-name": "@divmora/show-and-tell",
       "include-component-in-tag": false,
       "extra-files": [
         "packages/sdk/package.json",
