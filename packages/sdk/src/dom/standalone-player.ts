@@ -621,24 +621,66 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
       resetToStart();
     }
 
-    function buildNode(node) {
+    function buildNode(node, doc) {
+      const targetDoc = doc || iframeDoc;
+      if (!targetDoc || !node) return null;
+
       if (node.type === 'text') {
-        const t = iframeDoc.createTextNode(node.textContent || '');
+        const t = targetDoc.createTextNode(node.textContent || '');
         idToNode.set(node.id, t);
         return t;
       }
       if (node.type === 'element' && node.tagName) {
-        const el = iframeDoc.createElement(node.tagName);
+        const tagNameLower = node.tagName.toLowerCase();
+        const el = targetDoc.createElement(node.tagName);
         idToNode.set(node.id, el);
         if (node.attributes) {
           for (const [k, v] of Object.entries(node.attributes)) {
-            try { if (!k.startsWith('on') && k !== 'action') el.setAttribute(k, v); } catch(e){}
+            try {
+              if (!k.startsWith('on') && k !== 'action') {
+                if (tagNameLower === 'iframe' && k === 'src' && node.contentDocument) continue;
+                el.setAttribute(k, v);
+              }
+            } catch(e){}
           }
+        }
+        if (tagNameLower === 'iframe') {
+          el.setAttribute('sandbox', 'allow-same-origin');
         }
         if (node.children) {
           for (const child of node.children) {
-            const c = buildNode(child);
+            const c = buildNode(child, targetDoc);
             if (c) el.appendChild(c);
+          }
+        }
+        if (tagNameLower === 'iframe' && node.contentDocument) {
+          const populateChildIframe = function() {
+            try {
+              const childDoc = el.contentDocument || (el.contentWindow && el.contentWindow.document);
+              if (childDoc && node.contentDocument) {
+                const childRoot = buildNode(node.contentDocument, childDoc);
+                if (childRoot) {
+                  if (childDoc.documentElement) {
+                    childDoc.replaceChild(childRoot, childDoc.documentElement);
+                  } else {
+                    childDoc.appendChild(childRoot);
+                  }
+                  const s = childDoc.createElement('style');
+                  s.textContent = '* { pointer-events: none !important; }';
+                  if (childDoc.head) childDoc.head.appendChild(s);
+                }
+              }
+            } catch(e){}
+          };
+          try {
+            if (el.contentDocument && el.contentDocument.documentElement) {
+              populateChildIframe();
+            } else {
+              el.addEventListener('load', populateChildIframe, { once: true });
+              setTimeout(populateChildIframe, 0);
+            }
+          } catch(e) {
+            setTimeout(populateChildIframe, 0);
           }
         }
         if (node.isInput) {
@@ -722,7 +764,8 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
           for (const item of ev.addedNodes) {
             const parent = idToNode.get(item.parentId);
             if (parent && parent.nodeType === 1) {
-              const newNode = buildNode(item.node);
+              const targetDoc = parent.ownerDocument || iframeDoc;
+              const newNode = buildNode(item.node, targetDoc);
               if (newNode) {
                 const next = item.nextSiblingId ? idToNode.get(item.nextSiblingId) : null;
                 parent.insertBefore(newNode, next || null);
@@ -768,8 +811,16 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
         cursor.style.left = ev.x + 'px';
         cursor.style.top = ev.y + 'px';
       } else if (ev.type === 'scroll') {
-        // Auto-scroll viewport to exact recorded position
-        if (iframe.contentWindow) {
+        // Auto-scroll viewport or child iframe to exact recorded position
+        if (ev.targetId) {
+          const targetNode = idToNode.get(ev.targetId);
+          if (targetNode && targetNode.tagName && targetNode.tagName.toLowerCase() === 'iframe' && targetNode.contentWindow) {
+            try { targetNode.contentWindow.scrollTo(ev.x, ev.y); } catch(e){}
+          } else if (targetNode && targetNode.nodeType === 1) {
+            targetNode.scrollLeft = ev.x;
+            targetNode.scrollTop = ev.y;
+          }
+        } else if (iframe.contentWindow) {
           try { iframe.contentWindow.scrollTo(ev.x, ev.y); } catch(e){}
         }
       } else if (ev.type === 'resize') {

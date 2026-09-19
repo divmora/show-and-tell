@@ -358,4 +358,63 @@ describe('DOM Serializer', () => {
     const selectedOption = serialized?.children?.find(c => c.attributes?.value === 'tech');
     expect(selectedOption?.attributes?.selected).toBeDefined();
   });
+
+  it('serializes same-origin iframe and its contentDocument tree', () => {
+    const iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument!;
+    doc.body.innerHTML = '<div id="inside-iframe"><span>Hello from iframe</span></div>';
+
+    const ctx = createSerializationContext({ recordIframes: true });
+    const serialized = serializeNode(iframe, ctx);
+
+    expect(serialized).not.toBeNull();
+    expect(serialized?.tagName).toBe('iframe');
+    expect(serialized?.contentDocument).toBeDefined();
+    expect(serialized?.contentDocument?.tagName).toBe('html');
+
+    // Traverse into serialized iframe document
+    const bodyNode = serialized?.contentDocument?.children?.find(c => c.tagName === 'body');
+    expect(bodyNode).toBeDefined();
+    const divNode = bodyNode?.children?.find(c => c.attributes?.id === 'inside-iframe');
+    expect(divNode).toBeDefined();
+    expect(divNode?.children?.[0]?.children?.[0]?.textContent).toBe('Hello from iframe');
+  });
+
+  it('handles cross-origin iframe SecurityError gracefully', () => {
+    const iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
+
+    // Simulate cross-origin iframe where accessing contentDocument throws SecurityError
+    Object.defineProperty(iframe, 'contentDocument', {
+      get() {
+        throw new Error('Blocked a frame with origin from accessing a cross-origin frame');
+      },
+      configurable: true
+    });
+
+    const ctx = createSerializationContext({ recordIframes: true });
+    const serialized = serializeNode(iframe, ctx);
+
+    expect(serialized).not.toBeNull();
+    expect(serialized?.tagName).toBe('iframe');
+    expect(serialized?.contentDocument).toBeUndefined();
+    expect(serialized?.isCrossOrigin).toBe(true);
+  });
+
+  it('omits iframe contentDocument when recordIframes is false', () => {
+    const iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument!;
+    doc.body.innerHTML = '<div>Child content</div>';
+
+    const ctx = createSerializationContext({ recordIframes: false });
+    const serialized = serializeNode(iframe, ctx);
+
+    expect(serialized).not.toBeNull();
+    expect(serialized?.tagName).toBe('iframe');
+    expect(serialized?.contentDocument).toBeUndefined();
+  });
 });

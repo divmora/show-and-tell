@@ -15,13 +15,15 @@ import type {
   StoragePruneResult,
   StorageStats,
   DiagnosticEntry,
-  NetworkDiagnosticEntry
+  NetworkDiagnosticEntry,
+  IframeBridgeConfig
 } from './types';
 import { recorderEngine, RecorderEngine } from './core/recorder';
 import { storage } from './storage/indexeddb';
 import { RecoveryBanner } from './ui/recovery-banner';
 import { getExtensionForMimeType } from './utils/codecs';
 import { generateStandalonePlayerHtml } from './dom/standalone-player';
+import { initIframeBridge, IframeBridge } from './dom/iframe-bridge';
 import { uploadRecordingAssets } from './utils/uploader';
 import { exportToHar } from './diagnostics/sanitizer';
 
@@ -315,6 +317,14 @@ export const ShowAndTell = {
     const list: DiagnosticEntry[] = entries || recorderEngine.getDiagnostics();
     const netEntries = list.filter((e: DiagnosticEntry): e is NetworkDiagnosticEntry => e.category === 'network');
     return exportToHar(netEntries);
+  },
+
+  /**
+   * Initializes a cross-origin DOM recording bridge when running inside an embedded iframe.
+   * Enables secure postMessage relaying of DOM mutations, events, and snapshots to parent ShowAndTell.
+   */
+  initIframeBridge(config?: IframeBridgeConfig): IframeBridge {
+    return initIframeBridge(config);
   },
 
   /**

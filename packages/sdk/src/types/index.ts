@@ -44,7 +44,32 @@ export interface DomConfig {
   recordMouse?: boolean;
   /** Throttle interval for mouse movements in ms (default: 50) */
   mouseThrottleMs?: number;
+  /** Record same-origin iframes embedded in the page (default: true) */
+  recordIframes?: boolean;
+  /** Listen for bridged cross-origin iframes via postMessage (default: true) */
+  recordCrossOriginIframes?: boolean;
+  /** Allowed origins for cross-origin iframes communicating via postMessage (default: all) */
+  allowedIframeOrigins?: string[];
 }
+
+export interface IframeBridgeConfig {
+  /** Whitelist of parent origins allowed to record this child iframe (e.g. ['https://app.example.com'], default: all) */
+  allowedParentOrigins?: string[];
+  /** Optional DOM recording configuration applied to this child frame */
+  domConfig?: DomConfig;
+  /** Timeslice interval in ms for streaming events to parent (default: 500) */
+  timeslice?: number;
+  /** Optional target window for tests or nested container communication (default: window.parent) */
+  parentWindow?: Window;
+}
+
+export type IframeBridgeMessage =
+  | { type: 'sat:ping' }
+  | { type: 'sat:pong'; origin: string }
+  | { type: 'sat:start'; config?: DomConfig; startTime?: number }
+  | { type: 'sat:stop' }
+  | { type: 'sat:snapshot'; data: SerializedNode; viewport: { width: number; height: number; scrollX: number; scrollY: number } }
+  | { type: 'sat:chunk'; events: DomRecordingEvent[] };
 
 export interface SerializedNode {
   id: number;
@@ -56,6 +81,14 @@ export interface SerializedNode {
   isInput?: boolean;
   value?: string | boolean;
   selectedIndex?: number;
+  /** Serialized child document for same-origin or bridged <iframe> elements */
+  contentDocument?: SerializedNode;
+  /** Flagged true when an iframe is cross-origin */
+  isCrossOrigin?: boolean;
+  /** Flagged true when a cross-origin iframe has an active ShowAndTell bridge connection */
+  isBridged?: boolean;
+  /** Origin URL of the iframe (if available) */
+  iframeOrigin?: string;
 }
 
 export type DomRecordingEvent = 

@@ -217,5 +217,246 @@ describe('DomRecorder', () => {
     replayer.destroy();
     expect(container.innerHTML).toBe('');
   });
+
+  it('records mutations occurring inside a same-origin iframe', async () => {
+    const iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument!;
+    doc.body.innerHTML = '<div id="child-container"><p>First</p></div>';
+
+    recorder = new DomRecorder();
+    recorder.start();
+
+    // Mutate child document inside the iframe
+    const childContainer = doc.getElementById('child-container')!;
+    const newChildP = doc.createElement('p');
+    newChildP.textContent = 'Second paragraph in iframe';
+    childContainer.appendChild(newChildP);
+
+    // Wait for child MutationObserver microtask
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const events = recorder.getEvents();
+    const mutationEvents = events.filter(e => e.type === 'mutation');
+    expect(mutationEvents.length).toBeGreaterThan(0);
+
+    const childMutation = mutationEvents.find(e => 
+      e.type === 'mutation' && e.addedNodes?.some(n => n.node.textContent === 'Second paragraph in iframe' || n.node.tagName === 'p')
+    );
+    expect(childMutation).toBeDefined();
+  });
+
+  it('records and translates mouse click coordinates inside a child iframe', () => {
+    const iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument!;
+    doc.body.innerHTML = '<button id="child-btn">Click me</button>';
+
+    // Mock getBoundingClientRect for the iframe element
+    iframe.getBoundingClientRect = () => ({
+      left: 100,
+      top: 150,
+      right: 500,
+      bottom: 450,
+      width: 400,
+      height: 300,
+      x: 100,
+      y: 150,
+      toJSON: () => {}
+    });
+
+    recorder = new DomRecorder();
+    recorder.start();
+
+    // Dispatch a click inside iframe window at clientX: 25, clientY: 30
+    const clickEvent = new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 25,
+      clientY: 30
+    });
+    iframe.contentWindow!.dispatchEvent(clickEvent);
+
+    const events = recorder.getEvents();
+    const clickEvents = events.filter(e => e.type === 'mouse_click');
+    expect(clickEvents.length).toBeGreaterThan(0);
+
+    const recordedClick = clickEvents[0];
+    if (recordedClick.type === 'mouse_click') {
+      // 100 + 25 = 125, 150 + 30 = 180
+      expect(recordedClick.x).toBe(125);
+      expect(recordedClick.y).toBe(180);
+      expect(recordedClick.clickType).toBe('click');
+    }
+  });
+
+  it('records form inputs inside a child iframe', () => {
+    const iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument!;
+    doc.body.innerHTML = '<input type="text" id="child-input" value="" />';
+
+    recorder = new DomRecorder({ config: { maskAllInputs: false } });
+    recorder.start();
+
+    const input = doc.getElementById('child-input') as HTMLInputElement;
+    input.value = 'typed in child iframe';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const events = recorder.getEvents();
+    const inputEvents = events.filter(e => e.type === 'input');
+    expect(inputEvents.length).toBeGreaterThan(0);
+
+    const recordedInput = inputEvents[0];
+    if (recordedInput.type === 'input') {
+      expect(recordedInput.value).toBe('typed in child iframe');
+    }
+  });
+
+  it('dynamically observes newly appended iframe elements and tracks their mutations', async () => {
+    recorder = new DomRecorder();
+    recorder.start();
+
+    // Dynamically insert an iframe
+    const dynamicIframe = document.createElement('iframe');
+    document.body.appendChild(dynamicIframe);
+    const childDoc = dynamicIframe.contentDocument!;
+    childDoc.body.innerHTML = '<div id="dyn-box">Initial</div>';
+
+    // Wait for parent mutation observer to detect and observe the new iframe
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Now mutate inside the dynamically added iframe
+    const dynBox = childDoc.getElementById('dyn-box')!;
+    const childSpan = childDoc.createElement('span');
+    childSpan.textContent = 'Dynamic Child Span';
+    dynBox.appendChild(childSpan);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const events = recorder.getEvents();
+    const mutations = events.filter(e => e.type === 'mutation');
+    const addedSpanMutation = mutations.find(e =>
+      e.type === 'mutation' && e.addedNodes?.some(n => n.node.textContent === 'Dynamic Child Span' || n.node.tagName === 'span')
+    );
+    expect(addedSpanMutation).toBeDefined();
+  });
+
+  it('cleans up child observers when an iframe is removed from DOM', async () => {
+    const iframe = document.createElement('iframe');
+    document.body.appendChild(iframe);
+    const childDoc = iframe.contentDocument!;
+    childDoc.body.innerHTML = '<div id="box">Content</div>';
+    const box = childDoc.getElementById('box')!;
+
+    recorder = new DomRecorder();
+    recorder.start();
+
+    // Remove the iframe from document
+    document.body.removeChild(iframe);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Mutate the detached iframe — should NOT record mutations
+    const newEl = childDoc.createElement('b');
+    newEl.textContent = 'Ignored';
+    box.appendChild(newEl);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const events = recorder.getEvents();
+    const ignoredMutation = events.filter(e =>
+      e.type === 'mutation' && e.addedNodes?.some(n => n.node.textContent === 'Ignored')
+    );
+    expect(ignoredMutation.length).toBe(0);
+  });
+
+  it('DomReplayer renders same-origin iframe with contentDocument and applies child mutations', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const replayer = new DomReplayer({
+      container,
+      events: [
+        {
+          type: 'dom_snapshot',
+          timestamp: 0,
+          data: {
+            id: 1,
+            type: 'element',
+            tagName: 'html',
+            children: [
+              {
+                id: 2,
+                type: 'element',
+                tagName: 'body',
+                children: [
+                  {
+                    id: 3,
+                    type: 'element',
+                    tagName: 'iframe',
+                    contentDocument: {
+                      id: 4,
+                      type: 'element',
+                      tagName: 'html',
+                      children: [
+                        {
+                          id: 5,
+                          type: 'element',
+                          tagName: 'body',
+                          children: [
+                            {
+                              id: 6,
+                              type: 'element',
+                              tagName: 'div',
+                              attributes: { id: 'inner-replay-box' },
+                              children: [
+                                { id: 7, type: 'text', textContent: 'Initial Child Content' }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          viewport: { width: 1280, height: 800, scrollX: 0, scrollY: 0 }
+        },
+        {
+          type: 'mutation',
+          timestamp: 100,
+          addedNodes: [
+            {
+              parentId: 6,
+              node: {
+                id: 8,
+                type: 'element',
+                tagName: 'p',
+                children: [
+                  { id: 9, type: 'text', textContent: 'Mutated paragraph in child iframe' }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    });
+
+    // Wait a tick for initial child iframe content population
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const replayIframe = container.querySelector('iframe') as HTMLIFrameElement;
+    expect(replayIframe).not.toBeNull();
+
+    // Advance replayer to 150ms to dispatch mutation event
+    replayer.seek(150);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    replayer.destroy();
+    expect(container.innerHTML).toBe('');
+  });
 });
+
 

@@ -395,17 +395,18 @@ export class DomReplayer {
     this.onTimeUpdate?.(0, this.totalDurationMs);
   }
 
-  private buildDomNode(node: SerializedNode): Node | null {
-    if (!this.iframeDoc || !node) return null;
+  private buildDomNode(node: SerializedNode, doc: Document = this.iframeDoc!): Node | null {
+    if (!doc || !node) return null;
 
     if (node.type === 'text') {
-      const textNode = this.iframeDoc.createTextNode(node.textContent || '');
+      const textNode = doc.createTextNode(node.textContent || '');
       this.idToNode.set(node.id, textNode);
       return textNode;
     }
 
     if (node.type === 'element' && node.tagName) {
-      const el = this.iframeDoc.createElement(node.tagName);
+      const tagNameLower = node.tagName.toLowerCase();
+      const el = doc.createElement(node.tagName);
       this.idToNode.set(node.id, el);
 
       // Set attributes
@@ -413,18 +414,60 @@ export class DomReplayer {
         for (const [key, val] of Object.entries(node.attributes)) {
           try {
             if (key.startsWith('on') || key === 'action') continue;
+            // Prevent child replay iframe from initiating external network requests when recorded contentDocument is present
+            if (tagNameLower === 'iframe' && key === 'src' && node.contentDocument) continue;
             el.setAttribute(key, val);
           } catch {}
         }
       }
 
+      if (tagNameLower === 'iframe') {
+        el.setAttribute('sandbox', 'allow-same-origin');
+      }
+
       // Children (append first so <select> options are available before setting value)
       if (node.children) {
         for (const child of node.children) {
-          const childNode = this.buildDomNode(child);
+          const childNode = this.buildDomNode(child, doc);
           if (childNode) {
             el.appendChild(childNode);
           }
+        }
+      }
+
+      // Handle child iframe document population
+      if (tagNameLower === 'iframe' && node.contentDocument) {
+        const iframeEl = el as HTMLIFrameElement;
+        const populateIframe = () => {
+          try {
+            const childDoc = iframeEl.contentDocument || iframeEl.contentWindow?.document;
+            if (childDoc && node.contentDocument) {
+              const childRoot = this.buildDomNode(node.contentDocument, childDoc);
+              if (childRoot) {
+                if (childDoc.documentElement) {
+                  childDoc.replaceChild(childRoot, childDoc.documentElement);
+                } else {
+                  childDoc.appendChild(childRoot);
+                }
+                const style = childDoc.createElement('style');
+                style.textContent = `* { pointer-events: none !important; }`;
+                if (childDoc.head) {
+                  childDoc.head.appendChild(style);
+                }
+              }
+            }
+          } catch {}
+        };
+
+        try {
+          if (iframeEl.contentDocument && iframeEl.contentDocument.documentElement) {
+            populateIframe();
+          } else {
+            iframeEl.addEventListener('load', populateIframe, { once: true });
+            setTimeout(populateIframe, 0);
+          }
+        } catch {
+          setTimeout(populateIframe, 0);
         }
       }
 
@@ -585,7 +628,8 @@ export class DomReplayer {
           for (const item of event.addedNodes) {
             const parent = this.idToNode.get(item.parentId);
             if (parent && parent.nodeType === Node.ELEMENT_NODE) {
-              const newNode = this.buildDomNode(item.node);
+              const targetDoc = parent.ownerDocument || this.iframeDoc;
+              const newNode = this.buildDomNode(item.node, targetDoc!);
               if (newNode) {
                 const nextSibling = item.nextSiblingId ? this.idToNode.get(item.nextSiblingId) : null;
                 parent.insertBefore(newNode, nextSibling || null);
@@ -683,8 +727,18 @@ export class DomReplayer {
       }
 
       case 'scroll': {
-        // Auto-scroll the replay viewport to exact recorded scroll position
-        if (this.iframe && this.iframe.contentWindow) {
+        // Auto-scroll the replay viewport or child iframe to exact recorded scroll position
+        if (event.targetId) {
+          const targetNode = this.idToNode.get(event.targetId);
+          if (targetNode instanceof HTMLIFrameElement && targetNode.contentWindow) {
+            try {
+              targetNode.contentWindow.scrollTo(event.x, event.y);
+            } catch {}
+          } else if (targetNode instanceof HTMLElement) {
+            targetNode.scrollLeft = event.x;
+            targetNode.scrollTop = event.y;
+          }
+        } else if (this.iframe && this.iframe.contentWindow) {
           try {
             this.iframe.contentWindow.scrollTo(event.x, event.y);
           } catch {}

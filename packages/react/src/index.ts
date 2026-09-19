@@ -24,6 +24,8 @@ export type {
 // Re-export core SDK types and singleton for convenience
 export {
   ShowAndTell,
+  initIframeBridge,
+  IframeBridge,
   type ShowAndTellConfig,
   type RecordingSession,
   type RecordingResult,
@@ -31,5 +33,7 @@ export {
   type DurationStats,
   type PresignedUploadConfig,
   type PresignedUploadResult,
-  type RecordingMode
+  type RecordingMode,
+  type IframeBridgeConfig,
+  type IframeBridgeMessage
 } from '@divmora/show-and-tell';

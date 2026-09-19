@@ -25,9 +25,18 @@ export function createSerializationContext(config: DomConfig = {}): Serializatio
       unmaskTextSelector: config.unmaskTextSelector,
       blockClass: config.blockClass ?? 'sat-block',
       recordMouse: config.recordMouse ?? true,
-      mouseThrottleMs: config.mouseThrottleMs ?? 50
+      mouseThrottleMs: config.mouseThrottleMs ?? 50,
+      recordIframes: config.recordIframes ?? true
     }
   };
+}
+
+export function isSameOriginIframe(iframe: HTMLIFrameElement): boolean {
+  try {
+    return !!(iframe.contentDocument && iframe.contentWindow);
+  } catch {
+    return false;
+  }
 }
 
 export function elementMatches(el: Element, selector?: string): boolean {
@@ -157,7 +166,8 @@ export function isTextMasked(parentEl: Element | null, ctx: SerializationContext
 }
 
 export function isInputMasked(el: HTMLElement, ctx: SerializationContext): boolean {
-  if (el instanceof HTMLInputElement && el.type === 'password') {
+  const tag = el.tagName ? el.tagName.toLowerCase() : '';
+  if (tag === 'input' && (el as HTMLInputElement).type === 'password') {
     return true; // Passwords are always masked for safety
   }
   const explicit = isElementMaskedWithPrecedence(el, ctx);
@@ -165,7 +175,7 @@ export function isInputMasked(el: HTMLElement, ctx: SerializationContext): boole
     return explicit;
   }
   // Standard select dropdowns contain predetermined choices; mask only if explicitly requested
-  if (el instanceof HTMLSelectElement || (el.tagName && el.tagName.toLowerCase() === 'select')) {
+  if (tag === 'select') {
     return false;
   }
   return ctx.config.maskAllInputs ?? true;
@@ -297,6 +307,25 @@ export function serializeNode(node: Node, ctx: SerializationContext): Serialized
       }
     }
 
+    let contentDocument: SerializedNode | undefined;
+    let isCrossOrigin: boolean | undefined;
+
+    if (tagName === 'iframe' && ctx.config.recordIframes !== false) {
+      try {
+        const iframeEl = el as HTMLIFrameElement;
+        const doc = iframeEl.contentDocument || iframeEl.contentWindow?.document;
+        if (doc && doc.documentElement) {
+          const serializedDoc = serializeNode(doc.documentElement, ctx);
+          if (serializedDoc) {
+            contentDocument = serializedDoc;
+          }
+        }
+      } catch {
+        // Cross-origin access blocked by browser Same-Origin Policy
+        isCrossOrigin = true;
+      }
+    }
+
     return {
       id,
       type: 'element',
@@ -305,7 +334,9 @@ export function serializeNode(node: Node, ctx: SerializationContext): Serialized
       children,
       isInput,
       value,
-      selectedIndex
+      selectedIndex,
+      ...(contentDocument ? { contentDocument } : {}),
+      ...(isCrossOrigin ? { isCrossOrigin: true } : {})
     };
   }
 
