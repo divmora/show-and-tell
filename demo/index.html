@@ -232,6 +232,10 @@
               <input type="checkbox" id="storageAutoPrune" checked />
               Automatic Storage Pruning (7-Day TTL & 300 MB LRU Budget Cap)
             </label>
+            <label class="checkbox-label">
+              <input type="checkbox" id="hotkeysOption" checked />
+              Global Keyboard Hotkeys (Hands-Free Shortcuts)
+            </label>
 
             <!-- IndexedDB Storage Management & Quota Monitor -->
             <div id="storageStatsPanel" style="margin-top: 10px; padding: 10px 12px; background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; font-size: 12px;">
@@ -323,6 +327,22 @@
             <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>
             Stop Recording
           </button>
+        </div>
+
+        <!-- Hotkeys Quick Reference -->
+        <div style="margin-top: 14px; padding: 10px 14px; background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; font-size: 11px; color: #94a3b8;">
+          <div style="font-weight: 600; color: #e2e8f0; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <span>⌨️ Global Keyboard Hotkeys:</span>
+            <span style="font-size: 10px; background: rgba(59, 130, 246, 0.15); color: #60a5fa; padding: 1px 6px; border-radius: 4px;">Active</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 6px;">
+            <div><kbd style="background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); color: #f8fafc; font-family: monospace;">Alt+Shift+R</kbd> Start / Stop</div>
+            <div><kbd style="background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); color: #f8fafc; font-family: monospace;">Alt+Shift+P</kbd> Pause / Resume</div>
+            <div><kbd style="background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); color: #f8fafc; font-family: monospace;">Alt+Shift+M</kbd> Toggle Mic</div>
+            <div><kbd style="background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); color: #f8fafc; font-family: monospace;">Alt+Shift+C</kbd> Camera Bubble</div>
+            <div><kbd style="background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); color: #f8fafc; font-family: monospace;">Alt+Shift+S</kbd> Spotlight</div>
+            <div><kbd style="background: rgba(0,0,0,0.4); padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.15); color: #f8fafc; font-family: monospace;">Alt+Shift+D</kbd> Discard</div>
+          </div>
         </div>
       </div>
 

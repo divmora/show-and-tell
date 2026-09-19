@@ -218,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     code += `  diagnostics: ${diag}, // Developer console & network breadcrumbs\n`;
     code += `  countdown: ${countdown ? 3 : 0}, // Pre-recording 3-2-1 countdown overlay with audio ticks\n`;
     code += `  audioMeter: ${audioMeter}, // Real-time microphone VU meter & silent mic alert\n`;
+    code += `  hotkeys: ${document.getElementById('hotkeysOption')?.checked ?? true}, // Global shortcuts: Alt+Shift+R/P/M/C/S/D\n`;
     code += `  ui: ${ui}, // Floating draggable recording toolbar\n`;
     code += `  previewModal: ${preview}, // Post-recording playback & export modal\n`;
     if (!storageEnabled) {
@@ -535,6 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
         clickRipple: clickRippleOption ? clickRippleOption.checked : true,
         spotlight: spotlightOption ? spotlightOption.checked : false,
         ui: floatingUiCheckbox.checked,
+        hotkeys: document.getElementById('hotkeysOption')?.checked ?? true,
         previewModal: previewModalCheckbox.checked,
         storage: storagePersistenceCheckbox.checked ? {
           enabled: true,
@@ -576,6 +578,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       activeSession.on('maxDurationReached', () => {
         console.log('[Demo] Max duration reached! Auto-discontinuing...');
+      });
+
+      activeSession.on('discard', () => {
+        console.log('[Demo] Recording discarded by user');
+        updateUiState('stopped');
+        updateStorageStatsDisplay();
       });
 
       activeSession.on('stop', (result) => {
@@ -686,6 +694,20 @@ document.addEventListener('DOMContentLoaded', () => {
         storageFeedback.textContent = 'Local IndexedDB storage cleared.';
         storageFeedback.style.display = 'block';
         setTimeout(() => { storageFeedback.style.display = 'none'; }, 4000);
+      }
+    });
+  }
+
+  const hotkeysOptionCheckbox = document.getElementById('hotkeysOption');
+  if (hotkeysOptionCheckbox) {
+    hotkeysOptionCheckbox.addEventListener('change', updateSnippet);
+  }
+
+  // Register global hotkeys to trigger start on Alt+Shift+R
+  if (window.ShowAndTell && typeof window.ShowAndTell.registerHotkeys === 'function') {
+    window.ShowAndTell.registerHotkeys({}, () => {
+      if (btnStart && !btnStart.disabled && !activeSession) {
+        btnStart.click();
       }
     });
   }

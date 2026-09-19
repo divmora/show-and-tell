@@ -2,6 +2,7 @@ import {
   DiagnosticEntry,
   DiscontinueReason, 
   DomRecordingEvent,
+  HotkeyConfig,
   RecordingMode,
   RecordingResult, 
   RecordingSession, 
@@ -24,6 +25,7 @@ import { PipController } from '../ui/pip-controller';
 import { CursorEffectsManager } from '../ui/cursor-effects';
 import { CountdownOverlay } from '../ui/countdown';
 import { formatDuration } from '../utils/time';
+import { HotkeyManager } from '../ui/hotkeys';
 
 export class RecorderEngine {
   private activeSession?: RecordingSessionImpl;
@@ -48,11 +50,55 @@ export class RecorderEngine {
   private audioMixer?: AudioMixer;
   private durationTracker?: DurationTracker;
   private widget?: RecordingWidget;
+  private hotkeyManager?: HotkeyManager;
+  private static globalHotkeyManager?: HotkeyManager;
   private chunks: Blob[] = [];
   private chunkIndex = 0;
   private discontinueReason: DiscontinueReason = 'user_stopped';
   private stopResolver?: (result: RecordingResult) => void;
   private beforeUnloadHandler?: (e: BeforeUnloadEvent) => void;
+
+  static registerHotkeys(config: HotkeyConfig = {}, onStart?: () => Promise<RecordingSession> | void): HotkeyManager {
+    if (RecorderEngine.globalHotkeyManager) {
+      RecorderEngine.globalHotkeyManager.destroy();
+    }
+    RecorderEngine.globalHotkeyManager = new HotkeyManager({
+      config,
+      session: recorderEngine.getActiveSession(),
+      onStartRequest: () => {
+        if (onStart) {
+          return onStart();
+        }
+        if (!recorderEngine.isRecording()) {
+          return recorderEngine.startRecording();
+        }
+      },
+      onStopRequest: () => {
+        if (recorderEngine.isRecording()) {
+          return recorderEngine.stopRecording();
+        }
+      },
+      onDiscardRequest: () => {
+        const session = recorderEngine.getActiveSession();
+        if (session) {
+          return session.discard();
+        }
+      }
+    });
+    RecorderEngine.globalHotkeyManager.mount();
+    return RecorderEngine.globalHotkeyManager;
+  }
+
+  static unregisterHotkeys(): void {
+    if (RecorderEngine.globalHotkeyManager) {
+      RecorderEngine.globalHotkeyManager.destroy();
+      RecorderEngine.globalHotkeyManager = undefined;
+    }
+  }
+
+  static getGlobalHotkeys(): HotkeyManager | undefined {
+    return RecorderEngine.globalHotkeyManager;
+  }
 
   static isScreenCaptureSupported(): boolean {
     return typeof window !== 'undefined' && typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getDisplayMedia === 'function';
@@ -81,6 +127,22 @@ export class RecorderEngine {
 
   getActiveSession(): RecordingSession | undefined {
     return this.activeSession;
+  }
+
+  async stopRecording(): Promise<RecordingResult> {
+    const session = this.getActiveSession();
+    if (!session) {
+      throw new Error('No active recording session to stop.');
+    }
+    return session.stop();
+  }
+
+  async discardRecording(): Promise<void> {
+    const session = this.getActiveSession();
+    if (!session) {
+      return;
+    }
+    return session.discard();
   }
 
   private configuredTheme?: ThemeConfig;
@@ -268,6 +330,15 @@ export class RecorderEngine {
         audioMixer: this.audioMixer,
         filename: config.filename,
         onStopRequest: () => this.stopInternal('user_stopped'),
+        onDiscardRequest: () => {
+          return this.stopInternal('user_discarded').then(() => {});
+        },
+        onToggleCamera: () => {
+          return this.cameraBubble ? this.cameraBubble.toggle() : false;
+        },
+        onIsCameraActive: () => {
+          return this.cameraBubble ? this.cameraBubble.isVisible() : false;
+        },
         onPauseRequest: () => {
           this.domRecorder?.pause();
           if (this.cameraMediaRecorder && this.cameraMediaRecorder.state === 'recording') {
@@ -367,12 +438,24 @@ export class RecorderEngine {
 
       // Mount widget
       if (config.ui !== false) {
-        this.widget = new RecordingWidget(this.activeSession, !!this.micStream, config.theme);
+        this.widget = new RecordingWidget(this.activeSession, !!this.micStream, config.theme, config.hotkeys);
         this.widget.onPopoutRequest = () => {
           this.openPipWindow();
         };
         this.widget.mount();
       }
+
+      // Mount session hotkeys
+      if (config.hotkeys !== false) {
+        this.hotkeyManager = new HotkeyManager({
+          config: config.hotkeys,
+          session: this.activeSession,
+          onStopRequest: () => this.stopInternal('user_stopped'),
+          onDiscardRequest: () => this.stopInternal('user_discarded').then(() => {})
+        });
+        this.hotkeyManager.mount();
+      }
+      RecorderEngine.globalHotkeyManager?.setSession(this.activeSession);
 
       if (this.cameraBubble) {
         this.cameraBubble.onPopoutRequest = () => {
@@ -487,6 +570,15 @@ export class RecorderEngine {
       audioMixer: this.audioMixer,
       filename: config.filename,
       onStopRequest: () => this.stopInternal('user_stopped'),
+      onDiscardRequest: () => {
+        return this.stopInternal('user_discarded').then(() => {});
+      },
+      onToggleCamera: () => {
+        return this.cameraBubble ? this.cameraBubble.toggle() : false;
+      },
+      onIsCameraActive: () => {
+        return this.cameraBubble ? this.cameraBubble.isVisible() : false;
+      },
       onPauseRequest: () => {
         if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
           this.mediaRecorder.pause();
@@ -620,12 +712,24 @@ export class RecorderEngine {
 
     // 13. Mount Floating UI Widget (if enabled)
     if (config.ui !== false) {
-      this.widget = new RecordingWidget(this.activeSession, !!this.micStream, config.theme);
+      this.widget = new RecordingWidget(this.activeSession, !!this.micStream, config.theme, config.hotkeys);
       this.widget.onPopoutRequest = () => {
         this.openPipWindow();
       };
       this.widget.mount();
     }
+
+    // Mount session hotkeys
+    if (config.hotkeys !== false) {
+      this.hotkeyManager = new HotkeyManager({
+        config: config.hotkeys,
+        session: this.activeSession,
+        onStopRequest: () => this.stopInternal('user_stopped'),
+        onDiscardRequest: () => this.stopInternal('user_discarded').then(() => {})
+      });
+      this.hotkeyManager.mount();
+    }
+    RecorderEngine.globalHotkeyManager?.setSession(this.activeSession);
 
     if (this.cameraBubble) {
       this.cameraBubble.onPopoutRequest = () => {
@@ -724,6 +828,12 @@ export class RecorderEngine {
       this.widget.destroy();
       this.widget = undefined;
     }
+
+    if (this.hotkeyManager) {
+      this.hotkeyManager.destroy();
+      this.hotkeyManager = undefined;
+    }
+    RecorderEngine.globalHotkeyManager?.setSession(undefined);
 
     if (this.cursorEffects) {
       this.cursorEffects.destroy();
@@ -889,6 +999,13 @@ export class RecorderEngine {
       this.widget = undefined;
     }
 
+    // Clean up session hotkey manager
+    if (this.hotkeyManager) {
+      this.hotkeyManager.destroy();
+      this.hotkeyManager = undefined;
+    }
+    RecorderEngine.globalHotkeyManager?.setSession(undefined);
+
     // Clean up cursor effects
     if (this.cursorEffects) {
       this.cursorEffects.destroy();
@@ -943,20 +1060,29 @@ export class RecorderEngine {
     this.cameraBlob = undefined;
     this.cameraUrl = undefined;
 
-    // Update IndexedDB state to completed
-    const shouldPersist = config.storage !== false && (typeof config.storage !== 'object' || config.storage.enabled !== false);
-    if (shouldPersist) {
-      await storage.updateSession({
-        id: session.id,
-        status: 'completed',
-        elapsedMs: result.duration * 1000
-      });
-    }
+    // Handle IndexedDB persistence and Preview Modal
+    if (this.discontinueReason === 'user_discarded') {
+      try {
+        await storage.deleteSession(session.id);
+      } catch (err) {
+        console.warn('[ShowAndTell] Failed to delete discarded session from storage:', err);
+      }
+    } else {
+      // Update IndexedDB state to completed
+      const shouldPersist = config.storage !== false && (typeof config.storage !== 'object' || config.storage.enabled !== false);
+      if (shouldPersist) {
+        await storage.updateSession({
+          id: session.id,
+          status: 'completed',
+          elapsedMs: result.duration * 1000
+        });
+      }
 
-    // Mount Preview Modal if enabled
-    if (config.previewModal !== false) {
-      const modal = new PreviewModal(result, config.upload || config.uploadEndpoint, config.theme);
-      modal.mount();
+      // Mount Preview Modal if enabled
+      if (config.previewModal !== false) {
+        const modal = new PreviewModal(result, config.upload || config.uploadEndpoint, config.theme);
+        modal.mount();
+      }
     }
 
     // Resolve stop promise

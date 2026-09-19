@@ -11,10 +11,11 @@ import type {
   StorageConfig,
   StoragePruneOptions,
   StoragePruneResult,
-  StorageStats
+  StorageStats,
+  HotkeyConfig
 } from '@divmora/show-and-tell';
 
-export type { ThemeConfig, ThemeMode, StorageConfig, StoragePruneOptions, StoragePruneResult, StorageStats };
+export type { ThemeConfig, ThemeMode, StorageConfig, StoragePruneOptions, StoragePruneResult, StorageStats, HotkeyConfig };
 
 export interface UseShowAndTellOptions extends ShowAndTellConfig {
   /** Stop active recording automatically when component unmounts (default: false) */
@@ -64,6 +65,8 @@ export interface UseShowAndTellReturn {
   startRecording: (overrideConfig?: ShowAndTellConfig) => Promise<RecordingSession>;
   /** Stop current recording and resolve result */
   stopRecording: () => Promise<RecordingResult>;
+  /** Discard current recording immediately without saving */
+  discardRecording: () => Promise<void>;
   /** Pause current recording */
   pauseRecording: () => void;
   /** Resume paused recording */
@@ -78,6 +81,10 @@ export interface UseShowAndTellReturn {
   toggleSpotlight: () => boolean;
   /** Enable or disable cursor spotlight */
   setSpotlight: (enabled: boolean) => void;
+  /** Toggle camera bubble visibility */
+  toggleCamera: () => boolean;
+  /** True if camera bubble is currently active and visible */
+  isCameraActive: boolean;
   /** Trigger a click ripple animation at specified viewport coordinates */
   triggerClickRipple: (x: number, y: number, color?: string) => void;
   /** Dynamically update the visual theme tokens and mode */

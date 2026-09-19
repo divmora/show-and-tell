@@ -12,6 +12,7 @@ export type DiscontinueReason =
   | 'max_duration_reached'
   | 'track_ended'
   | 'reload_recovery'
+  | 'user_discarded'
   | 'error';
 
 export type RecordingMode = 'pixel' | 'dom';
@@ -306,7 +307,30 @@ export interface ThemeConfig {
   cssVariables?: Record<string, string>;
 }
 
+export interface HotkeyConfig {
+  /** Master toggle for keyboard shortcuts (default: true) */
+  enabled?: boolean;
+  /** Start or stop recording toggle (default: 'Alt+Shift+R') */
+  toggleRecording?: string | false;
+  /** Pause or resume recording toggle (default: 'Alt+Shift+P') */
+  togglePause?: string | false;
+  /** Toggle microphone mute/unmute (default: 'Alt+Shift+M') */
+  toggleMic?: string | false;
+  /** Toggle camera webcam bubble visibility (default: 'Alt+Shift+C') */
+  toggleCamera?: string | false;
+  /** Toggle cursor spotlight illumination (default: 'Alt+Shift+S') */
+  toggleSpotlight?: string | false;
+  /** Discard and cancel recording without saving (default: 'Alt+Shift+D') */
+  discardRecording?: string | false;
+  /** Prevent triggering hotkeys when user is focused on editable inputs / textareas / contenteditable (default: true) */
+  preventInputCollision?: boolean;
+  /** Custom keydown listener target (default: window) */
+  target?: EventTarget;
+}
+
 export interface ShowAndTellConfig {
+  /** Global keyboard shortcuts for hands-free recording control (default: true) */
+  hotkeys?: boolean | HotkeyConfig;
   /** Recording mode: 'pixel' (screen capture, default), 'dom' (in-app session replay), or 'auto' (automatic detection based on device capabilities) */
   mode?: RequestedRecordingMode;
   /** Automatically fallback to DOM mode if screen capture (getDisplayMedia) is not supported in the current browser/device (e.g. iPhone / iOS browsers) */
@@ -547,6 +571,12 @@ export interface RecordingSession {
   isSpotlightActive: () => boolean;
   /** Trigger a click ripple animation at specified viewport coordinates */
   triggerClickRipple: (x: number, y: number, color?: string) => void;
+  /** Discard and cancel recording immediately without saving or opening preview modal */
+  discard: () => Promise<void>;
+  /** Toggle webcam facecam bubble visibility if camera is enabled. Returns true if visible */
+  toggleCamera?: () => boolean;
+  /** Check if camera bubble is currently active and visible */
+  isCameraActive?: () => boolean;
   /** Get current audio meter level data */
   getAudioLevel?: () => AudioLevelData;
   /** Check if silent microphone warning is currently triggered */
@@ -562,12 +592,14 @@ export type SessionEventName =
   | 'pause'
   | 'resume'
   | 'stop'
+  | 'discard'
   | 'tick'
   | 'warning'
   | 'maxDurationReached'
   | 'chunk'
   | 'micMuteChange'
   | 'spotlightChange'
+  | 'cameraToggle'
   | 'audioLevel'
   | 'silentMicWarning'
   | 'error';

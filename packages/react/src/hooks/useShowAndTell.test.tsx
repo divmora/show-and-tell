@@ -61,6 +61,14 @@ function createMockSession() {
     setSpotlight: vi.fn((enabled: boolean) => {
       session.emit('spotlightChange', enabled);
     }),
+    discard: vi.fn().mockImplementation(async () => {
+      session.state = 'idle';
+      session.emit('discard');
+    }),
+    toggleCamera: vi.fn(() => {
+      session.emit('cameraToggle', true);
+      return true;
+    }),
     isSpotlightActive: vi.fn(() => false),
     triggerClickRipple: vi.fn(),
     on: vi.fn((event: string, handler: Function) => {
@@ -401,5 +409,47 @@ describe('useShowAndTell', () => {
 
     expect(statsSpy).toHaveBeenCalled();
     expect(statsRes).toEqual(mockStats);
+  });
+
+  it('handles discardRecording and resets recording state', async () => {
+    const mockSession = createMockSession();
+    vi.spyOn(ShowAndTell, 'startRecording').mockResolvedValue(mockSession as any);
+    vi.spyOn(ShowAndTell, 'getActiveSession').mockReturnValue(mockSession as any);
+
+    const { result } = renderHook(() => useShowAndTell());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    expect(result.current.isRecording).toBe(true);
+
+    await act(async () => {
+      await result.current.discardRecording();
+    });
+
+    expect(mockSession.discard).toHaveBeenCalled();
+    expect(result.current.isRecording).toBe(false);
+    expect(result.current.state).toBe('idle');
+  });
+
+  it('handles toggleCamera and updates isCameraActive state', async () => {
+    const mockSession = createMockSession();
+    vi.spyOn(ShowAndTell, 'startRecording').mockResolvedValue(mockSession as any);
+    vi.spyOn(ShowAndTell, 'getActiveSession').mockReturnValue(mockSession as any);
+
+    const { result } = renderHook(() => useShowAndTell());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    act(() => {
+      const active = result.current.toggleCamera();
+      expect(active).toBe(true);
+    });
+
+    expect(mockSession.toggleCamera).toHaveBeenCalled();
+    expect(result.current.isCameraActive).toBe(true);
   });
 });

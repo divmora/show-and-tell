@@ -38,6 +38,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
   const [audioLevel, setAudioLevel] = useState<AudioLevelData>({ volume: 0, level: 0 });
   const [isSilentMicWarning, setIsSilentMicWarning] = useState(false);
   const [isSpotlightActive, setIsSpotlightActive] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const [activeSession, setActiveSession] = useState<RecordingSession | null>(null);
   const [lastResult, setLastResult] = useState<RecordingResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -116,6 +117,17 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       setIsSilentMicWarning(Boolean(active));
     });
 
+    const offCamera = session.on('cameraToggle', (active: boolean) => {
+      setIsCameraActive(Boolean(active));
+    });
+
+    const offDiscard = session.on('discard', () => {
+      setState('idle');
+      setIsPaused(false);
+      setActiveSession(null);
+      activeSessionRef.current = null;
+    });
+
     const offStop = session.on('stop', (result: RecordingResult) => {
       setLastResult(result);
       setState('stopped');
@@ -139,6 +151,8 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       offSpotlight();
       offAudioLevel();
       offSilentWarning();
+      offCamera();
+      offDiscard();
       offStop();
       offError();
     };
@@ -192,6 +206,23 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       const errorObj = err instanceof Error ? err : new Error(String(err));
       setError(errorObj);
       setState('error');
+      throw errorObj;
+    }
+  }, []);
+
+  const discardRecording = useCallback(async () => {
+    try {
+      const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+      if (session) {
+        await session.discard();
+      }
+      setState('idle');
+      setIsPaused(false);
+      setActiveSession(null);
+      activeSessionRef.current = null;
+    } catch (err: any) {
+      const errorObj = err instanceof Error ? err : new Error(String(err));
+      setError(errorObj);
       throw errorObj;
     }
   }, []);
@@ -258,6 +289,16 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     }
   }, []);
 
+  const toggleCamera = useCallback((): boolean => {
+    const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+    if (session && session.toggleCamera) {
+      const active = session.toggleCamera();
+      setIsCameraActive(active);
+      return active;
+    }
+    return false;
+  }, []);
+
   const triggerClickRipple = useCallback((x: number, y: number, color?: string) => {
     const session = activeSessionRef.current || ShowAndTell.getActiveSession();
     if (session) {
@@ -306,11 +347,13 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     audioLevel,
     isSilentMicWarning,
     isSpotlightActive,
+    isCameraActive,
     activeSession,
     lastResult,
     error,
     startRecording,
     stopRecording,
+    discardRecording,
     pauseRecording,
     resumeRecording,
     toggleMic,
@@ -318,6 +361,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     unmuteMic,
     toggleSpotlight,
     setSpotlight,
+    toggleCamera,
     triggerClickRipple,
     setTheme,
     clearError,

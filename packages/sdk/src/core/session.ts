@@ -29,12 +29,15 @@ export interface SessionInitOptions {
   audioMixer?: AudioMixer;
   filename?: string;
   onStopRequest: () => Promise<RecordingResult>;
+  onDiscardRequest?: () => Promise<void>;
   onPauseRequest: () => void;
   onResumeRequest: () => void;
   onToggleSpotlight?: () => boolean;
   onSetSpotlight?: (enabled: boolean) => void;
   onIsSpotlightActive?: () => boolean;
   onTriggerRipple?: (x: number, y: number, color?: string) => void;
+  onToggleCamera?: () => boolean;
+  onIsCameraActive?: () => boolean;
 }
 
 export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, any[]>> implements RecordingSession {
@@ -46,12 +49,15 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
   private audioMixer?: AudioMixer;
   private defaultFilename: string;
   private onStopRequest: () => Promise<RecordingResult>;
+  private onDiscardRequest?: () => Promise<void>;
   private onPauseRequest: () => void;
   private onResumeRequest: () => void;
   private onToggleSpotlight?: () => boolean;
   private onSetSpotlight?: (enabled: boolean) => void;
   private onIsSpotlightActive?: () => boolean;
   private onTriggerRipple?: (x: number, y: number, color?: string) => void;
+  private onToggleCamera?: () => boolean;
+  private onIsCameraActive?: () => boolean;
   private stopPromise?: Promise<RecordingResult>;
 
   constructor(options: SessionInitOptions) {
@@ -63,12 +69,15 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
     this.audioMixer = options.audioMixer;
     this.defaultFilename = options.filename || `recording_${new Date().toISOString().replace(/[:.]/g, '-')}`;
     this.onStopRequest = options.onStopRequest;
+    this.onDiscardRequest = options.onDiscardRequest;
     this.onPauseRequest = options.onPauseRequest;
     this.onResumeRequest = options.onResumeRequest;
     this.onToggleSpotlight = options.onToggleSpotlight;
     this.onSetSpotlight = options.onSetSpotlight;
     this.onIsSpotlightActive = options.onIsSpotlightActive;
     this.onTriggerRipple = options.onTriggerRipple;
+    this.onToggleCamera = options.onToggleCamera;
+    this.onIsCameraActive = options.onIsCameraActive;
 
     // Forward duration tracker events
     this.durationTracker.on('tick', (stats) => this.emit('tick', stats));
@@ -85,6 +94,32 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
 
   getStats(): DurationStats {
     return this.durationTracker.getStats();
+  }
+
+  async discard(): Promise<void> {
+    if (this.state === 'stopped' || this.state === 'stopping') {
+      return;
+    }
+
+    this.state = 'stopping';
+    if (this.onDiscardRequest) {
+      await this.onDiscardRequest();
+    }
+    this.state = 'stopped';
+    this.emit('discard');
+  }
+
+  toggleCamera(): boolean {
+    if (this.onToggleCamera) {
+      const active = this.onToggleCamera();
+      this.emit('cameraToggle', active);
+      return active;
+    }
+    return false;
+  }
+
+  isCameraActive(): boolean {
+    return this.onIsCameraActive ? this.onIsCameraActive() : false;
   }
 
   async stop(): Promise<RecordingResult> {

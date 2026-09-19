@@ -1,6 +1,14 @@
-import { DurationStats, RecordingSession, ThemeConfig } from '../types';
+import { DurationStats, RecordingSession, ThemeConfig, HotkeyConfig } from '../types';
 import { WIDGET_STYLES } from './styles';
 import { applyThemeToHost } from './theme';
+import { formatHotkeyLabel, DEFAULT_HOTKEYS } from './hotkeys';
+
+function resolveShortcut(keyVal: string | false | undefined, fallback: string | false): string {
+  if (keyVal === false) return '';
+  const chosen = keyVal || fallback;
+  if (!chosen) return '';
+  return formatHotkeyLabel(chosen);
+}
 
 const ICONS = {
   drag: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M9 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm10-18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>`,
@@ -30,6 +38,10 @@ export class RecordingWidget {
   private unsubscribeSpotlight?: () => void;
   private unsubscribeAudioLevel?: () => void;
   private unsubscribeSilentWarning?: () => void;
+  private unsubscribePause?: () => void;
+  private unsubscribeResume?: () => void;
+  private unsubscribeMicMute?: () => void;
+  private hotkeys?: boolean | HotkeyConfig;
 
   public onPopoutRequest?: () => void;
 
@@ -43,8 +55,11 @@ export class RecordingWidget {
   constructor(
     private session: RecordingSession,
     private hasMic: boolean = false,
-    private theme?: ThemeConfig
-  ) {}
+    private theme?: ThemeConfig,
+    hotkeys?: boolean | HotkeyConfig
+  ) {
+    this.hotkeys = hotkeys;
+  }
 
   /**
    * Dynamically updates the widget's visual theme tokens and color mode.
@@ -60,12 +75,20 @@ export class RecordingWidget {
     if (typeof document === 'undefined') return;
 
     this.hostElement = document.createElement('show-and-tell-widget');
-    applyThemeToHost(this.hostElement, this.theme);
     this.shadowRoot = this.hostElement.attachShadow({ mode: 'open' });
+
+    applyThemeToHost(this.hostElement, this.theme);
 
     const styleEl = document.createElement('style');
     styleEl.textContent = WIDGET_STYLES;
     this.shadowRoot.appendChild(styleEl);
+
+    const hotkeyCfg = typeof this.hotkeys === 'object' ? this.hotkeys : {};
+    const isHotkeysEnabled = this.hotkeys !== false && hotkeyCfg.enabled !== false;
+    const pauseHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.togglePause, DEFAULT_HOTKEYS.togglePause) : '';
+    const stopHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.toggleRecording, DEFAULT_HOTKEYS.toggleRecording) : '';
+    const micHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.toggleMic, DEFAULT_HOTKEYS.toggleMic) : '';
+    const spotlightHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.toggleSpotlight, DEFAULT_HOTKEYS.toggleSpotlight) : '';
 
     this.containerEl = document.createElement('div');
     this.containerEl.className = 'sat-widget-container';
@@ -74,7 +97,7 @@ export class RecordingWidget {
         <svg class="sat-silent-warning-icon" viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
         <span>Microphone seems silent</span>
       </div>
-      <div class="sat-drag-handle" title="Drag to reposition">
+      <div class="sat-drag-handle" title="Drag toolbar">
         ${ICONS.drag}
       </div>
       <div class="sat-status-indicator">
@@ -88,7 +111,7 @@ export class RecordingWidget {
       <div class="sat-btn-group">
         ${this.hasMic ? `
           <div class="sat-mic-wrapper">
-            <button class="sat-btn sat-btn-mic" title="Mute/Unmute Mic">
+            <button class="sat-btn sat-btn-mic" title="${micHotkey ? `Mute/Unmute Mic (${micHotkey})` : 'Mute/Unmute Mic'}">
               ${ICONS.micOn}
             </button>
             <div class="sat-vu-meter" title="Microphone Level" data-level="0">
@@ -98,13 +121,13 @@ export class RecordingWidget {
             </div>
           </div>
         ` : ''}
-        <button class="sat-btn sat-btn-pause" title="Pause/Resume">
+        <button class="sat-btn sat-btn-pause" title="${pauseHotkey ? `Pause/Resume (${pauseHotkey})` : 'Pause/Resume'}">
           ${ICONS.pause}
         </button>
-        <button class="sat-btn sat-btn-stop" title="Stop Recording">
+        <button class="sat-btn sat-btn-stop" title="${stopHotkey ? `Stop Recording (${stopHotkey})` : 'Stop Recording'}">
           ${ICONS.stop}
         </button>
-        <button class="sat-btn sat-btn-spotlight" title="Toggle Cursor Spotlight">
+        <button class="sat-btn sat-btn-spotlight" title="${spotlightHotkey ? `Toggle Cursor Spotlight (${spotlightHotkey})` : 'Toggle Cursor Spotlight'}">
           ${ICONS.spotlight}
         </button>
         <button class="sat-btn sat-btn-pip" title="Float over all apps (Always-on-Top PiP across windows and tabs)">
@@ -143,20 +166,35 @@ export class RecordingWidget {
   }
 
   private setupListeners(): void {
+    const hotkeyCfg = typeof this.hotkeys === 'object' ? this.hotkeys : {};
+    const isHotkeysEnabled = this.hotkeys !== false && hotkeyCfg.enabled !== false;
+    const pauseHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.togglePause, DEFAULT_HOTKEYS.togglePause) : '';
+    const micHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.toggleMic, DEFAULT_HOTKEYS.toggleMic) : '';
+
     if (this.pauseBtn) {
       this.pauseBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         if (this.session.state === 'recording') {
           this.session.pause();
-          this.pauseBtn!.innerHTML = ICONS.play;
-          this.pauseBtn!.title = 'Resume Recording';
-          this.containerEl?.classList.add('sat-paused');
         } else if (this.session.state === 'paused') {
           this.session.resume();
-          this.pauseBtn!.innerHTML = ICONS.pause;
-          this.pauseBtn!.title = 'Pause Recording';
-          this.containerEl?.classList.remove('sat-paused');
         }
+      });
+
+      this.unsubscribePause = this.session.on('pause', () => {
+        if (this.pauseBtn) {
+          this.pauseBtn.innerHTML = ICONS.play;
+          this.pauseBtn.title = pauseHotkey ? `Resume Recording (${pauseHotkey})` : 'Resume Recording';
+        }
+        this.containerEl?.classList.add('sat-paused');
+      });
+
+      this.unsubscribeResume = this.session.on('resume', () => {
+        if (this.pauseBtn) {
+          this.pauseBtn.innerHTML = ICONS.pause;
+          this.pauseBtn.title = pauseHotkey ? `Pause Recording (${pauseHotkey})` : 'Pause Recording';
+        }
+        this.containerEl?.classList.remove('sat-paused');
       });
     }
 
@@ -173,17 +211,29 @@ export class RecordingWidget {
     }
 
     if (this.micBtn) {
-      this.micBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isMuted = this.session.toggleMic();
-        this.micBtn!.innerHTML = isMuted ? ICONS.micOff : ICONS.micOn;
-        this.micBtn!.title = isMuted ? 'Unmute Mic' : 'Mute Mic';
-        this.micBtn!.classList.toggle('sat-btn-active-toggle', isMuted);
+      const handleMicToggle = (isMuted: boolean) => {
+        if (this.micBtn) {
+          this.micBtn.innerHTML = isMuted ? ICONS.micOff : ICONS.micOn;
+          this.micBtn.title = isMuted
+            ? (micHotkey ? `Unmute Mic (${micHotkey})` : 'Unmute Mic')
+            : (micHotkey ? `Mute Mic (${micHotkey})` : 'Mute Mic');
+          this.micBtn.classList.toggle('sat-btn-active-toggle', isMuted);
+        }
         this.vuMeterEl?.classList.toggle('is-muted', isMuted);
         if (isMuted) {
           this.updateAudioLevel(0);
           this.updateSilentWarning(false);
         }
+      };
+
+      this.micBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isMuted = this.session.toggleMic();
+        handleMicToggle(isMuted);
+      });
+
+      this.unsubscribeMicMute = this.session.on('micMuteChange', (isMuted: boolean) => {
+        handleMicToggle(isMuted);
       });
     }
 
@@ -345,6 +395,18 @@ export class RecordingWidget {
     if (this.unsubscribeSilentWarning) {
       this.unsubscribeSilentWarning();
       this.unsubscribeSilentWarning = undefined;
+    }
+    if (this.unsubscribePause) {
+      this.unsubscribePause();
+      this.unsubscribePause = undefined;
+    }
+    if (this.unsubscribeResume) {
+      this.unsubscribeResume();
+      this.unsubscribeResume = undefined;
+    }
+    if (this.unsubscribeMicMute) {
+      this.unsubscribeMicMute();
+      this.unsubscribeMicMute = undefined;
     }
     if (this.hostElement && this.hostElement.parentNode) {
       this.hostElement.parentNode.removeChild(this.hostElement);

@@ -16,7 +16,8 @@ import type {
   StorageStats,
   DiagnosticEntry,
   NetworkDiagnosticEntry,
-  IframeBridgeConfig
+  IframeBridgeConfig,
+  HotkeyConfig
 } from './types';
 import { recorderEngine, RecorderEngine } from './core/recorder';
 import { storage } from './storage/indexeddb';
@@ -24,6 +25,7 @@ import { RecoveryBanner } from './ui/recovery-banner';
 import { getExtensionForMimeType } from './utils/codecs';
 import { generateStandalonePlayerHtml } from './dom/standalone-player';
 import { initIframeBridge, IframeBridge } from './dom/iframe-bridge';
+import { HotkeyManager } from './ui/hotkeys';
 import { uploadRecordingAssets } from './utils/uploader';
 import { exportToHar } from './diagnostics/sanitizer';
 
@@ -51,6 +53,14 @@ export {
   DEFAULT_DARK_TOKENS,
   DEFAULT_LIGHT_TOKENS
 } from './ui/theme';
+export {
+  HotkeyManager,
+  DEFAULT_HOTKEYS,
+  formatHotkeyLabel,
+  parseHotkey,
+  matchesHotkey,
+  isEditableElement
+} from './ui/hotkeys';
 
 /**
  * Main ShowAndTell SDK object.
@@ -75,6 +85,36 @@ export const ShowAndTell = {
       throw new Error('No active recording session to stop.');
     }
     return session.stop();
+  },
+
+  /**
+   * Discards the currently active recording session immediately without saving.
+   */
+  async discardRecording(): Promise<void> {
+    const session = recorderEngine.getActiveSession();
+    if (!session) return;
+    return session.discard();
+  },
+
+  /**
+   * Registers global keyboard shortcuts for starting, controlling, and stopping recordings.
+   */
+  registerHotkeys(config: HotkeyConfig = {}, onStart?: () => Promise<RecordingSession> | void): HotkeyManager {
+    return RecorderEngine.registerHotkeys(config, onStart);
+  },
+
+  /**
+   * Unregisters any active global keyboard shortcuts.
+   */
+  unregisterHotkeys(): void {
+    RecorderEngine.unregisterHotkeys();
+  },
+
+  /**
+   * Retrieves the currently active global hotkey manager, if registered.
+   */
+  getGlobalHotkeys(): HotkeyManager | undefined {
+    return RecorderEngine.getGlobalHotkeys();
   },
 
   /**

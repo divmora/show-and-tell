@@ -371,16 +371,30 @@ export class CameraBubble {
     }
   }
 
+  show(): void {
+    if (this.hostElement) {
+      this.hostElement.style.display = '';
+    }
+  }
+
+  isVisible(): boolean {
+    return !!this.hostElement && this.hostElement.style.display !== 'none';
+  }
+
+  toggle(): boolean {
+    if (this.isVisible()) {
+      this.hide();
+      return false;
+    } else {
+      this.show();
+      return true;
+    }
+  }
+
   setTheme(theme: ThemeConfig): void {
     this.theme = theme;
     if (this.hostElement) {
       applyThemeToHost(this.hostElement, theme);
-    }
-  }
-
-  show(): void {
-    if (this.hostElement) {
-      this.hostElement.style.display = '';
     }
   }
 
