@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.0](https://github.com/divmora/show-and-tell/compare/v0.3.0...v0.4.0) (2026-09-19)
+
+
+### Features
+
+* **dom:** add same-origin and cross-origin iframe recording and replay ([c6ac349](https://github.com/divmora/show-and-tell/commit/c6ac3499e8d2419c4ad7ec11a47731a91074d7a6))
+* **ux:** global keyboard shortcuts and hands-free recording hotkeys ([#15](https://github.com/divmora/show-and-tell/issues/15)) ([b1f3f09](https://github.com/divmora/show-and-tell/commit/b1f3f0905f187ed7267bf2380d33f9403c40ae23))
+
 ## [0.3.0](https://github.com/divmora/show-and-tell/compare/v0.2.0...v0.3.0) (2026-09-18)
 
 
