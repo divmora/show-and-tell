@@ -43,6 +43,7 @@ export { formatDuration, formatBytes, parseDurationToMs } from './utils/time';
 export { getPreferredMimeType, getExtensionForMimeType } from './utils/codecs';
 export { PipController } from './ui/pip-controller';
 export { CursorEffectsManager } from './ui/cursor-effects';
+export { TelestratorOverlay, DEFAULT_PALETTE_COLORS } from './ui/telestrator';
 export { CountdownOverlay } from './ui/countdown';
 export { uploadRecordingAssets, uploadBlobToPresignedTarget } from './utils/uploader';
 export {
@@ -129,6 +130,22 @@ export const ShowAndTell = {
    */
   getActiveSession(): RecordingSession | undefined {
     return recorderEngine.getActiveSession();
+  },
+
+  /**
+   * Toggle telestrator drawing overlay mode on the active recording session.
+   */
+  toggleTelestrator(): boolean {
+    const session = recorderEngine.getActiveSession();
+    return session?.toggleTelestrator ? session.toggleTelestrator() : false;
+  },
+
+  /**
+   * Clear all screen drawings and annotations on the active recording session.
+   */
+  clearDrawings(): void {
+    const session = recorderEngine.getActiveSession();
+    session?.clearDrawings?.();
   },
 
   /**

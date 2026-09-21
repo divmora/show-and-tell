@@ -17,6 +17,8 @@ export const DEFAULT_HOTKEYS: Required<Omit<HotkeyConfig, 'target'>> = {
   toggleMic: 'Alt+Shift+M',
   toggleCamera: 'Alt+Shift+C',
   toggleSpotlight: 'Alt+Shift+S',
+  toggleTelestrator: 'Alt+Shift+A',
+  clearDrawings: 'Alt+Shift+X',
   discardRecording: 'Alt+Shift+D',
   preventInputCollision: true
 };
@@ -206,6 +208,8 @@ export class HotkeyManager {
   private parsedToggleMic: ParsedHotkey | null = null;
   private parsedToggleCamera: ParsedHotkey | null = null;
   private parsedToggleSpotlight: ParsedHotkey | null = null;
+  private parsedToggleTelestrator: ParsedHotkey | null = null;
+  private parsedClearDrawings: ParsedHotkey | null = null;
   private parsedDiscardRecording: ParsedHotkey | null = null;
 
   constructor(options: HotkeyManagerOptions = {}) {
@@ -250,6 +254,8 @@ export class HotkeyManager {
     this.parsedToggleMic = this.config.toggleMic ? parseHotkey(this.config.toggleMic) : null;
     this.parsedToggleCamera = this.config.toggleCamera ? parseHotkey(this.config.toggleCamera) : null;
     this.parsedToggleSpotlight = this.config.toggleSpotlight ? parseHotkey(this.config.toggleSpotlight) : null;
+    this.parsedToggleTelestrator = this.config.toggleTelestrator ? parseHotkey(this.config.toggleTelestrator) : null;
+    this.parsedClearDrawings = this.config.clearDrawings ? parseHotkey(this.config.clearDrawings) : null;
     this.parsedDiscardRecording = this.config.discardRecording ? parseHotkey(this.config.discardRecording) : null;
   }
 
@@ -340,7 +346,23 @@ export class HotkeyManager {
       return;
     }
 
-    // 6. Discard Recording
+    // 6. Toggle Telestrator
+    if (this.parsedToggleTelestrator && matchesHotkey(event, this.parsedToggleTelestrator)) {
+      event.preventDefault();
+      event.stopPropagation();
+      session.toggleTelestrator?.();
+      return;
+    }
+
+    // 7. Clear Screen Drawings
+    if (this.parsedClearDrawings && matchesHotkey(event, this.parsedClearDrawings)) {
+      event.preventDefault();
+      event.stopPropagation();
+      session.clearDrawings?.();
+      return;
+    }
+
+    // 8. Discard Recording
     if (this.parsedDiscardRecording && matchesHotkey(event, this.parsedDiscardRecording)) {
       event.preventDefault();
       event.stopPropagation();

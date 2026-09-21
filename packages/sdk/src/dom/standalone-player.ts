@@ -391,6 +391,7 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
     <div class="viewport-spacer" id="viewportSpacer">
       <div class="viewport-wrapper" id="viewportWrapper">
         <iframe id="replayFrame" sandbox="allow-same-origin"></iframe>
+        <canvas id="annotationCanvas" style="position: absolute; top: 0; left: 0; pointer-events: none; z-index: 999995;"></canvas>
         <div class="virtual-cursor" id="virtualCursor">
           <svg viewBox="0 0 24 24" width="20" height="20" style="filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6));">
             <path d="M4 2l16 10-6.5 1.5 4.5 7.5-2.5 1.5-4.5-7.5L7 18z" fill="#ef4444" stroke="#ffffff" stroke-width="1.5"/>
@@ -512,6 +513,110 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
 
       cameraWrapper.appendChild(cameraVideo);
       viewportWrapper.appendChild(cameraWrapper);
+    }
+
+    const annotationCanvas = document.getElementById('annotationCanvas');
+    const annotationCtx = annotationCanvas ? annotationCanvas.getContext('2d') : null;
+    let activeReplayStrokes = [];
+
+    if (annotationCanvas) {
+      annotationCanvas.width = viewW;
+      annotationCanvas.height = viewH;
+      annotationCanvas.style.width = viewW + 'px';
+      annotationCanvas.style.height = viewH + 'px';
+    }
+
+    function drawReplayStroke(stroke, opacity) {
+      if (!annotationCtx) return;
+      const ctx = annotationCtx;
+      ctx.save();
+      ctx.globalAlpha = opacity === undefined ? 1 : opacity;
+      ctx.strokeStyle = stroke.color;
+      ctx.fillStyle = stroke.color;
+      ctx.lineWidth = stroke.strokeWidth;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      if (stroke.tool === 'pen') {
+        if (stroke.points.length === 1) {
+          ctx.beginPath();
+          ctx.arc(stroke.points[0].x, stroke.points[0].y, stroke.strokeWidth / 2, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (stroke.points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+          for (let i = 1; i < stroke.points.length; i++) {
+            ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+          }
+          ctx.stroke();
+        }
+      } else if (stroke.tool === 'arrow' && stroke.points.length >= 2) {
+        const start = stroke.points[0];
+        const end = stroke.points[1];
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist >= 4) {
+          const angle = Math.atan2(dy, dx);
+          const headLength = Math.max(14, stroke.strokeWidth * 3.5);
+          const arrowAngle = Math.PI / 6;
+
+          ctx.beginPath();
+          ctx.moveTo(start.x, start.y);
+          ctx.lineTo(end.x, end.y);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(end.x, end.y);
+          ctx.lineTo(
+            end.x - headLength * Math.cos(angle - arrowAngle),
+            end.y - headLength * Math.sin(angle - arrowAngle)
+          );
+          ctx.lineTo(
+            end.x - (headLength * 0.65) * Math.cos(angle),
+            end.y - (headLength * 0.65) * Math.sin(angle)
+          );
+          ctx.lineTo(
+            end.x - headLength * Math.cos(angle + arrowAngle),
+            end.y - headLength * Math.sin(angle + arrowAngle)
+          );
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    function redrawAnnotations(time) {
+      if (!annotationCtx || !annotationCanvas) return;
+      annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
+
+      for (let i = 0; i < activeReplayStrokes.length; i++) {
+        const stroke = activeReplayStrokes[i];
+        let opacity = 1;
+        if (stroke.disappearing) {
+          const elapsed = time - stroke.timestamp;
+          if (elapsed >= stroke.fadeAfterMs) {
+            continue;
+          } else if (elapsed > stroke.fadeAfterMs - 600) {
+            opacity = Math.max(0, (stroke.fadeAfterMs - elapsed) / 600);
+          }
+        }
+        drawReplayStroke(stroke, opacity);
+      }
+    }
+
+    function updateDisappearingAnnotations(time) {
+      if (!annotationCtx || !annotationCanvas) return;
+      let hasDisappearing = false;
+      for (let i = 0; i < activeReplayStrokes.length; i++) {
+        if (activeReplayStrokes[i].disappearing) {
+          hasDisappearing = true;
+          break;
+        }
+      }
+      if (!hasDisappearing) return;
+      redrawAnnotations(time);
     }
 
     function updateScaling() {
@@ -743,6 +848,10 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
           cameraWrapper.style.borderRadius = firstCam.shape === 'rect' ? '12px' : '50%';
         }
       }
+      activeReplayStrokes = [];
+      if (annotationCtx && annotationCanvas) {
+        annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
+      }
       updateUi();
     }
 
@@ -831,6 +940,13 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
         viewportWrapper.style.height = viewH + 'px';
         iframe.style.width = viewW + 'px';
         iframe.style.height = viewH + 'px';
+        if (annotationCanvas) {
+          annotationCanvas.width = viewW;
+          annotationCanvas.height = viewH;
+          annotationCanvas.style.width = viewW + 'px';
+          annotationCanvas.style.height = viewH + 'px';
+          redrawAnnotations(currentTimeMs);
+        }
         updateScaling();
       } else if (ev.type === 'input') {
         const el = idToNode.get(ev.targetId);
@@ -891,6 +1007,25 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
             cameraVideo.style.opacity = ev.isMuted ? '0.2' : '1';
           }
         }
+      } else if (ev.type === 'drawing') {
+        if (!annotationCtx || !annotationCanvas) return;
+        const data = ev.data;
+        if (data.action === 'clear') {
+          activeReplayStrokes = [];
+          annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
+        } else if (data.action === 'draw') {
+          const stroke = {
+            tool: data.tool || 'pen',
+            points: data.points || [],
+            color: data.color || '#ef4444',
+            strokeWidth: data.strokeWidth || 4,
+            disappearing: !!data.disappearing,
+            timestamp: ev.timestamp,
+            fadeAfterMs: data.fadeAfterMs || 3000
+          };
+          activeReplayStrokes.push(stroke);
+          drawReplayStroke(stroke, 1);
+        }
       }
     }
 
@@ -921,6 +1056,7 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
         lastRafTimestamp = now;
         currentTimeMs = Math.min(totalDurationMs, currentTimeMs + delta);
         dispatchEventsUpTo(currentTimeMs);
+        updateDisappearingAnnotations(currentTimeMs);
         updateUi();
 
         if (cameraVideo && Number.isFinite(cameraVideo.currentTime)) {
@@ -962,6 +1098,7 @@ export function generateStandalonePlayerHtml(options: StandalonePlayerOptions): 
       const targetTime = (parseFloat(e.target.value) / 1000) * totalDurationMs;
       resetToStart();
       dispatchEventsUpTo(targetTime);
+      redrawAnnotations(targetTime);
       currentTimeMs = targetTime;
       if (cameraVideo) {
         cameraVideo.currentTime = Math.max(0, targetTime / 1000);

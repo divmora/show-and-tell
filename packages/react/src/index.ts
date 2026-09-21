@@ -29,6 +29,8 @@ export {
   HotkeyManager,
   DEFAULT_HOTKEYS,
   formatHotkeyLabel,
+  TelestratorOverlay,
+  DEFAULT_PALETTE_COLORS,
   type HotkeyConfig,
   type ShowAndTellConfig,
   type RecordingSession,
@@ -39,5 +41,9 @@ export {
   type PresignedUploadResult,
   type RecordingMode,
   type IframeBridgeConfig,
-  type IframeBridgeMessage
+  type IframeBridgeMessage,
+  type TelestratorConfig,
+  type DrawingTool,
+  type DrawingPoint,
+  type DrawingEventData
 } from '@divmora/show-and-tell';

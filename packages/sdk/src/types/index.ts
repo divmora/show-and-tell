@@ -92,6 +92,23 @@ export interface SerializedNode {
   iframeOrigin?: string;
 }
 
+export interface DrawingPoint {
+  x: number;
+  y: number;
+}
+
+export type DrawingTool = 'pen' | 'arrow';
+
+export interface DrawingEventData {
+  action: 'draw' | 'clear';
+  tool?: DrawingTool;
+  points?: DrawingPoint[];
+  color?: string;
+  strokeWidth?: number;
+  disappearing?: boolean;
+  fadeAfterMs?: number;
+}
+
 export type DomRecordingEvent = 
   | { type: 'dom_snapshot'; timestamp: number; data: SerializedNode; viewport: { width: number; height: number; scrollX: number; scrollY: number } }
   | { type: 'mutation'; timestamp: number; addedNodes?: { parentId: number; nextSiblingId?: number | null; node: SerializedNode }[]; removedNodeIds?: number[]; attributeChanges?: { nodeId: number; name: string; value: string | null }[]; textChanges?: { nodeId: number; value: string }[] }
@@ -101,7 +118,8 @@ export type DomRecordingEvent =
   | { type: 'input'; timestamp: number; targetId: number; value: string | boolean; checked?: boolean; selectedIndex?: number }
   | { type: 'selection'; timestamp: number; ranges?: { startNodeId: number; startOffset: number; endNodeId: number; endOffset: number }[] }
   | { type: 'camera_position'; timestamp: number; x: number; y: number; width: number; height: number; shape: 'circle' | 'rect'; isMuted?: boolean }
-  | { type: 'resize'; timestamp: number; width: number; height: number };
+  | { type: 'resize'; timestamp: number; width: number; height: number }
+  | { type: 'drawing'; timestamp: number; data: DrawingEventData };
 
 export interface AudioConfig {
   /** Capture microphone voiceover (default: false) */
@@ -322,15 +340,38 @@ export interface HotkeyConfig {
   toggleSpotlight?: string | false;
   /** Discard and cancel recording without saving (default: 'Alt+Shift+D') */
   discardRecording?: string | false;
+  /** Toggle screen annotation / telestrator drawing mode (default: 'Alt+Shift+A') */
+  toggleTelestrator?: string | false;
+  /** Clear all screen drawings and annotations (default: 'Alt+Shift+X') */
+  clearDrawings?: string | false;
   /** Prevent triggering hotkeys when user is focused on editable inputs / textareas / contenteditable (default: true) */
   preventInputCollision?: boolean;
   /** Custom keydown listener target (default: window) */
   target?: EventTarget;
 }
 
+export interface TelestratorConfig {
+  /** Master toggle to enable telestrator drawing tools (default: true) */
+  enabled?: boolean;
+  /** Initial drawing tool selected: 'pen' | 'arrow' (default: 'pen') */
+  defaultTool?: DrawingTool;
+  /** Initial drawing color hex code (default: '#ef4444') */
+  defaultColor?: string;
+  /** Stroke width in pixels (default: 4) */
+  strokeWidth?: number;
+  /** Disappearing ink mode enabled by default (default: false) */
+  disappearingInk?: boolean;
+  /** Duration in milliseconds before disappearing drawings fade out (default: 3000) */
+  fadeDelayMs?: number;
+  /** Custom colors available in palette (default: ['#ef4444', '#eab308', '#3b82f6', '#10b981']) */
+  paletteColors?: string[];
+}
+
 export interface ShowAndTellConfig {
   /** Global keyboard shortcuts for hands-free recording control (default: true) */
   hotkeys?: boolean | HotkeyConfig;
+  /** In-page screen annotation & telestrator drawing tools overlay (default: true) */
+  telestrator?: boolean | TelestratorConfig;
   /** Recording mode: 'pixel' (screen capture, default), 'dom' (in-app session replay), or 'auto' (automatic detection based on device capabilities) */
   mode?: RequestedRecordingMode;
   /** Automatically fallback to DOM mode if screen capture (getDisplayMedia) is not supported in the current browser/device (e.g. iPhone / iOS browsers) */
@@ -577,6 +618,20 @@ export interface RecordingSession {
   toggleCamera?: () => boolean;
   /** Check if camera bubble is currently active and visible */
   isCameraActive?: () => boolean;
+  /** Toggle telestrator drawing overlay mode on/off. Returns new active state */
+  toggleTelestrator?: () => boolean;
+  /** Enable or disable telestrator drawing mode */
+  setTelestrator?: (active: boolean) => void;
+  /** Check if telestrator drawing mode is currently active */
+  isTelestratorActive?: () => boolean;
+  /** Clear all screen annotations and drawings */
+  clearDrawings?: () => void;
+  /** Set current drawing tool ('pen' | 'arrow') */
+  setDrawingTool?: (tool: DrawingTool) => void;
+  /** Set current drawing color */
+  setDrawingColor?: (color: string) => void;
+  /** Toggle disappearing ink mode. Returns new state */
+  toggleDisappearingInk?: () => boolean;
   /** Get current audio meter level data */
   getAudioLevel?: () => AudioLevelData;
   /** Check if silent microphone warning is currently triggered */
@@ -600,6 +655,8 @@ export type SessionEventName =
   | 'micMuteChange'
   | 'spotlightChange'
   | 'cameraToggle'
+  | 'telestratorToggle'
+  | 'drawing'
   | 'audioLevel'
   | 'silentMicWarning'
   | 'error';

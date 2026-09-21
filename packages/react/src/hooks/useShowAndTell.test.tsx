@@ -69,6 +69,15 @@ function createMockSession() {
       session.emit('cameraToggle', true);
       return true;
     }),
+    toggleTelestrator: vi.fn(() => {
+      session.emit('telestratorToggle', true);
+      return true;
+    }),
+    isTelestratorActive: vi.fn(() => false),
+    clearDrawings: vi.fn(),
+    setDrawingTool: vi.fn(),
+    setDrawingColor: vi.fn(),
+    toggleDisappearingInk: vi.fn(() => true),
     isSpotlightActive: vi.fn(() => false),
     triggerClickRipple: vi.fn(),
     on: vi.fn((event: string, handler: Function) => {
@@ -451,5 +460,52 @@ describe('useShowAndTell', () => {
 
     expect(mockSession.toggleCamera).toHaveBeenCalled();
     expect(result.current.isCameraActive).toBe(true);
+  });
+
+  it('handles toggleTelestrator and updates isTelestratorActive state', async () => {
+    const mockSession = createMockSession();
+    vi.spyOn(ShowAndTell, 'startRecording').mockResolvedValue(mockSession as any);
+    vi.spyOn(ShowAndTell, 'getActiveSession').mockReturnValue(mockSession as any);
+
+    const { result } = renderHook(() => useShowAndTell());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    expect(result.current.isTelestratorActive).toBe(false);
+
+    act(() => {
+      const active = result.current.toggleTelestrator();
+      expect(active).toBe(true);
+    });
+
+    expect(mockSession.toggleTelestrator).toHaveBeenCalled();
+    expect(result.current.isTelestratorActive).toBe(true);
+  });
+
+  it('delegates clearDrawings, setDrawingTool, setDrawingColor, and toggleDisappearingInk to session', async () => {
+    const mockSession = createMockSession();
+    vi.spyOn(ShowAndTell, 'startRecording').mockResolvedValue(mockSession as any);
+    vi.spyOn(ShowAndTell, 'getActiveSession').mockReturnValue(mockSession as any);
+
+    const { result } = renderHook(() => useShowAndTell());
+
+    await act(async () => {
+      await result.current.startRecording();
+    });
+
+    act(() => {
+      result.current.clearDrawings();
+      result.current.setDrawingTool('arrow');
+      result.current.setDrawingColor('#3b82f6');
+      const ink = result.current.toggleDisappearingInk();
+      expect(ink).toBe(true);
+    });
+
+    expect(mockSession.clearDrawings).toHaveBeenCalled();
+    expect(mockSession.setDrawingTool).toHaveBeenCalledWith('arrow');
+    expect(mockSession.setDrawingColor).toHaveBeenCalledWith('#3b82f6');
+    expect(mockSession.toggleDisappearingInk).toHaveBeenCalled();
   });
 });

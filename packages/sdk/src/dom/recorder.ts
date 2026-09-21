@@ -1,4 +1,4 @@
-import { DomConfig, DomRecordingEvent, IframeBridgeMessage, SerializedNode } from '../types';
+import { DomConfig, DomRecordingEvent, DrawingEventData, IframeBridgeMessage, SerializedNode } from '../types';
 import { 
   createSerializationContext, 
   isInputMasked,
@@ -752,6 +752,15 @@ export class DomRecorder {
       height: state.height,
       shape: state.shape,
       isMuted: state.isMuted
+    });
+  }
+
+  recordDrawing(data: DrawingEventData): void {
+    if (this.isPaused) return;
+    this.pushEvent({
+      type: 'drawing',
+      timestamp: this.getRelativeTime(),
+      data
     });
   }
 }

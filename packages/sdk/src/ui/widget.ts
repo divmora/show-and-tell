@@ -18,7 +18,8 @@ const ICONS = {
   micOn: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/></svg>`,
   micOff: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17L12.06 8.25c.01-.08.02-.16.02-.25V5c0-1.66-1.34-3-3-3-.25 0-.49.04-.71.1l7.61 7.61v1.71zm-9.74-7.9 1.41-1.41L21.19 19.4l-1.41 1.41-4.22-4.22C14.47 17.37 13.3 18 12 18c-3.41 0-6.23-2.72-6.72-6H3.58C4.06 15.28 6.78 18.1 10 18.58V21h2v-2.42c.86-.13 1.66-.43 2.37-.87l-7.13-7.14V11H5.58c0 .28.03.55.08.81L4.24 3.27z"/></svg>`,
   pip: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M19 11h-8v6h8v-6zm4 8V4.98C23 3.88 22.1 3 21 3H3c-1.1 0-2 .88-2 1.98V19c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2zm-2 .02H3V4.97h18v14.05z"/></svg>`,
-  spotlight: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 17.93V19a1 1 0 0 1-2 0v-.07A8 8 0 0 1 4.07 13H5a1 1 0 0 1 0-2h-.93A8 8 0 0 1 11 4.07V5a1 1 0 0 1 2 0v-.07A8 8 0 0 1 19.93 11H19a1 1 0 0 1 0 2h.93A8 8 0 0 1 13 18.93zM12 8a4 4 0 1 0 4 4 4 4 0 0 0-4-4z"/></svg>`
+  spotlight: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 17.93V19a1 1 0 0 1-2 0v-.07A8 8 0 0 1 4.07 13H5a1 1 0 0 1 0-2h-.93A8 8 0 0 1 11 4.07V5a1 1 0 0 1 2 0v-.07A8 8 0 0 1 19.93 11H19a1 1 0 0 1 0 2h.93A8 8 0 0 1 13 18.93zM12 8a4 4 0 1 0 4 4 4 4 0 0 0-4-4z"/></svg>`,
+  draw: `<svg class="sat-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>`
 };
 
 export class RecordingWidget {
@@ -32,10 +33,12 @@ export class RecordingWidget {
   private stopBtn?: HTMLButtonElement;
   private pipBtn?: HTMLButtonElement;
   private spotlightBtn?: HTMLButtonElement;
+  private drawBtn?: HTMLButtonElement;
   private vuMeterEl?: HTMLElement;
   private silentWarningEl?: HTMLElement;
   private unsubscribeTick?: () => void;
   private unsubscribeSpotlight?: () => void;
+  private unsubscribeTelestrator?: () => void;
   private unsubscribeAudioLevel?: () => void;
   private unsubscribeSilentWarning?: () => void;
   private unsubscribePause?: () => void;
@@ -89,6 +92,7 @@ export class RecordingWidget {
     const stopHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.toggleRecording, DEFAULT_HOTKEYS.toggleRecording) : '';
     const micHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.toggleMic, DEFAULT_HOTKEYS.toggleMic) : '';
     const spotlightHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.toggleSpotlight, DEFAULT_HOTKEYS.toggleSpotlight) : '';
+    const drawHotkey = isHotkeysEnabled ? resolveShortcut(hotkeyCfg.toggleTelestrator, DEFAULT_HOTKEYS.toggleTelestrator) : '';
 
     this.containerEl = document.createElement('div');
     this.containerEl.className = 'sat-widget-container';
@@ -130,6 +134,9 @@ export class RecordingWidget {
         <button class="sat-btn sat-btn-spotlight" title="${spotlightHotkey ? `Toggle Cursor Spotlight (${spotlightHotkey})` : 'Toggle Cursor Spotlight'}">
           ${ICONS.spotlight}
         </button>
+        <button class="sat-btn sat-btn-draw" title="${drawHotkey ? `Annotate / Draw (${drawHotkey})` : 'Annotate / Draw'}">
+          ${ICONS.draw}
+        </button>
         <button class="sat-btn sat-btn-pip" title="Float over all apps (Always-on-Top PiP across windows and tabs)">
           ${ICONS.pip}
         </button>
@@ -144,6 +151,7 @@ export class RecordingWidget {
     this.pauseBtn = this.containerEl.querySelector('.sat-btn-pause') as HTMLButtonElement;
     this.stopBtn = this.containerEl.querySelector('.sat-btn-stop') as HTMLButtonElement;
     this.spotlightBtn = this.containerEl.querySelector('.sat-btn-spotlight') as HTMLButtonElement;
+    this.drawBtn = this.containerEl.querySelector('.sat-btn-draw') as HTMLButtonElement;
     this.pipBtn = this.containerEl.querySelector('.sat-btn-pip') as HTMLButtonElement;
     if (this.hasMic) {
       this.micBtn = this.containerEl.querySelector('.sat-btn-mic') as HTMLButtonElement;
@@ -159,6 +167,10 @@ export class RecordingWidget {
 
     if (this.session.isSpotlightActive?.()) {
       this.updateSpotlightBtn(true);
+    }
+
+    if (this.session.isTelestratorActive?.()) {
+      this.updateDrawBtn(true);
     }
 
     this.setupListeners();
@@ -207,6 +219,18 @@ export class RecordingWidget {
 
       this.unsubscribeSpotlight = this.session.on('spotlightChange', (active: boolean) => {
         this.updateSpotlightBtn(active);
+      });
+    }
+
+    if (this.drawBtn) {
+      this.drawBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const active = this.session.toggleTelestrator?.() ?? false;
+        this.updateDrawBtn(active);
+      });
+
+      this.unsubscribeTelestrator = this.session.on('telestratorToggle', (active: boolean) => {
+        this.updateDrawBtn(active);
       });
     }
 
@@ -369,6 +393,15 @@ export class RecordingWidget {
     }
   }
 
+  private updateDrawBtn(active: boolean): void {
+    if (!this.drawBtn) return;
+    if (active) {
+      this.drawBtn.classList.add('sat-btn-active-toggle');
+    } else {
+      this.drawBtn.classList.remove('sat-btn-active-toggle');
+    }
+  }
+
   private updateAudioLevel(level: 0 | 1 | 2 | 3): void {
     if (!this.vuMeterEl) return;
     this.vuMeterEl.setAttribute('data-level', String(level));
@@ -387,6 +420,10 @@ export class RecordingWidget {
     if (this.unsubscribeSpotlight) {
       this.unsubscribeSpotlight();
       this.unsubscribeSpotlight = undefined;
+    }
+    if (this.unsubscribeTelestrator) {
+      this.unsubscribeTelestrator();
+      this.unsubscribeTelestrator = undefined;
     }
     if (this.unsubscribeAudioLevel) {
       this.unsubscribeAudioLevel();

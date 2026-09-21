@@ -457,6 +457,133 @@ describe('DomRecorder', () => {
     replayer.destroy();
     expect(container.innerHTML).toBe('');
   });
+
+  it('records drawing events and ignores them when paused in DomRecorder', () => {
+    recorder = new DomRecorder();
+    recorder.start();
+
+    recorder.recordDrawing({
+      action: 'draw',
+      tool: 'pen',
+      points: [{ x: 10, y: 10 }, { x: 20, y: 20 }],
+      color: '#ef4444',
+      strokeWidth: 4
+    });
+
+    recorder.pause();
+    recorder.recordDrawing({
+      action: 'draw',
+      tool: 'arrow',
+      points: [{ x: 30, y: 30 }, { x: 50, y: 50 }]
+    });
+
+    recorder.resume();
+    recorder.recordDrawing({
+      action: 'clear'
+    });
+
+    const events = recorder.getEvents().filter(e => e.type === 'drawing');
+    expect(events.length).toBe(2);
+    expect((events[0] as any).data.action).toBe('draw');
+    expect((events[0] as any).data.tool).toBe('pen');
+    expect((events[1] as any).data.action).toBe('clear');
+  });
+
+  it('replays drawing events on annotationCanvas in DomReplayer', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+
+    const replayer = new DomReplayer({
+      container,
+      events: [
+        {
+          type: 'dom_snapshot',
+          timestamp: 0,
+          data: {
+            id: 1,
+            type: 'element',
+            tagName: 'html',
+            children: [
+              { id: 2, type: 'element', tagName: 'body', children: [] }
+            ]
+          },
+          viewport: { width: 1280, height: 800, scrollX: 0, scrollY: 0 }
+        },
+        {
+          type: 'drawing',
+          timestamp: 50,
+          data: {
+            action: 'draw',
+            tool: 'pen',
+            points: [{ x: 100, y: 100 }, { x: 150, y: 150 }],
+            color: '#ef4444',
+            strokeWidth: 4
+          }
+        },
+        {
+          type: 'drawing',
+          timestamp: 100,
+          data: {
+            action: 'draw',
+            tool: 'arrow',
+            points: [{ x: 200, y: 200 }, { x: 300, y: 300 }],
+            color: '#3b82f6',
+            strokeWidth: 4
+          }
+        },
+        {
+          type: 'drawing',
+          timestamp: 150,
+          data: {
+            action: 'clear'
+          }
+        }
+      ]
+    });
+
+    const canvas = container.querySelector('canvas.sat-replay-annotation-canvas') as HTMLCanvasElement;
+    expect(canvas).not.toBeNull();
+    expect(canvas.width).toBe(1280);
+    expect(canvas.height).toBe(800);
+
+    // Seek to 75ms (first pen stroke drawn)
+    replayer.seek(75);
+    // Seek to 120ms (pen + arrow drawn)
+    replayer.seek(120);
+    // Seek to 180ms (cleared)
+    replayer.seek(180);
+
+    replayer.destroy();
+    expect(container.innerHTML).toBe('');
+  });
+
+  it('embeds annotationCanvas and drawing handler in generateStandalonePlayerHtml', () => {
+    const html = generateStandalonePlayerHtml({
+      events: [
+        {
+          type: 'dom_snapshot',
+          timestamp: 0,
+          data: { id: 1, type: 'element', tagName: 'html', children: [] },
+          viewport: { width: 1280, height: 720, scrollX: 0, scrollY: 0 }
+        },
+        {
+          type: 'drawing',
+          timestamp: 100,
+          data: {
+            action: 'draw',
+            tool: 'pen',
+            points: [{ x: 10, y: 10 }, { x: 20, y: 20 }]
+          }
+        }
+      ],
+      durationSeconds: 5,
+      sessionId: 'test-session-standalone'
+    });
+
+    expect(html).toContain('id="annotationCanvas"');
+    expect(html).toContain('ev.type === \'drawing\'');
+    expect(html).toContain('drawReplayStroke');
+  });
 });
 
 

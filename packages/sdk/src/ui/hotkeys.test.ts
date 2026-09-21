@@ -175,6 +175,8 @@ describe('Global Keyboard Hotkeys', () => {
         toggleMic: vi.fn().mockReturnValue(true),
         toggleSpotlight: vi.fn().mockReturnValue(true),
         toggleCamera: vi.fn().mockReturnValue(true),
+        toggleTelestrator: vi.fn().mockReturnValue(true),
+        clearDrawings: vi.fn(),
         discard: vi.fn().mockResolvedValue(undefined)
       };
     });
@@ -260,6 +262,28 @@ describe('Global Keyboard Hotkeys', () => {
         cancelable: true
       }));
       expect(mockSession.toggleCamera).toHaveBeenCalledTimes(1);
+
+      // Toggle Telestrator (Alt+Shift+A)
+      target.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'a',
+        code: 'KeyA',
+        altKey: true,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      }));
+      expect(mockSession.toggleTelestrator).toHaveBeenCalledTimes(1);
+
+      // Clear Drawings (Alt+Shift+X)
+      target.dispatchEvent(new KeyboardEvent('keydown', {
+        key: 'x',
+        code: 'KeyX',
+        altKey: true,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      }));
+      expect(mockSession.clearDrawings).toHaveBeenCalledTimes(1);
 
       manager.destroy();
     });

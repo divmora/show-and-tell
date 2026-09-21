@@ -1,4 +1,4 @@
-import { DomRecordingEvent, SerializedNode } from '../types';
+import { DomRecordingEvent, DrawingPoint, DrawingTool, SerializedNode } from '../types';
 
 export type ZoomMode = 'fit' | 1 | 1.5 | 2;
 
@@ -24,6 +24,17 @@ export class DomReplayer {
   private iframe?: HTMLIFrameElement;
   private iframeDoc?: Document;
   private virtualCursor?: HTMLElement;
+  private annotationCanvas?: HTMLCanvasElement;
+  private annotationCtx?: CanvasRenderingContext2D | null;
+  private activeReplayStrokes: Array<{
+    tool: DrawingTool;
+    points: DrawingPoint[];
+    color: string;
+    strokeWidth: number;
+    disappearing: boolean;
+    timestamp: number;
+    fadeAfterMs: number;
+  }> = [];
   private resizeObserver?: ResizeObserver;
   private idToNode = new Map<number, Node>();
   private cleanupFns: Array<() => void> = [];
@@ -118,6 +129,21 @@ export class DomReplayer {
     this.iframe.style.display = 'block';
     this.iframe.setAttribute('sandbox', 'allow-same-origin');
     this.viewportWrapper.appendChild(this.iframe);
+
+    // 2b. Replay Annotation Canvas Overlay
+    this.annotationCanvas = document.createElement('canvas');
+    this.annotationCanvas.className = 'sat-replay-annotation-canvas';
+    this.annotationCanvas.style.position = 'absolute';
+    this.annotationCanvas.style.top = '0';
+    this.annotationCanvas.style.left = '0';
+    this.annotationCanvas.style.width = `${this.recordedViewWidth}px`;
+    this.annotationCanvas.style.height = `${this.recordedViewHeight}px`;
+    this.annotationCanvas.width = this.recordedViewWidth;
+    this.annotationCanvas.height = this.recordedViewHeight;
+    this.annotationCanvas.style.pointerEvents = 'none';
+    this.annotationCanvas.style.zIndex = '999995';
+    this.viewportWrapper.appendChild(this.annotationCanvas);
+    this.annotationCtx = this.annotationCanvas.getContext('2d');
 
     // 3. Virtual Cursor
     this.virtualCursor = document.createElement('div');
@@ -392,6 +418,11 @@ export class DomReplayer {
       }
     }
 
+    this.activeReplayStrokes = [];
+    if (this.annotationCtx && this.annotationCanvas) {
+      this.annotationCtx.clearRect(0, 0, this.annotationCanvas.width, this.annotationCanvas.height);
+    }
+
     this.onTimeUpdate?.(0, this.totalDurationMs);
   }
 
@@ -529,6 +560,7 @@ export class DomReplayer {
       this.currentTimeMs = Math.min(this.totalDurationMs, this.currentTimeMs + delta);
 
       this.dispatchEventsUpTo(this.currentTimeMs);
+      this.updateDisappearingAnnotations(this.currentTimeMs);
       this.onTimeUpdate?.(this.currentTimeMs, this.totalDurationMs);
 
       if (this.cameraVideo && Number.isFinite(this.cameraVideo.currentTime)) {
@@ -578,6 +610,7 @@ export class DomReplayer {
     const clamped = Math.max(0, Math.min(this.totalDurationMs, targetTimeMs));
     this.resetToStart();
     this.dispatchEventsUpTo(clamped);
+    this.redrawAnnotations(clamped);
     this.currentTimeMs = clamped;
     if (this.cameraVideo) {
       this.cameraVideo.currentTime = Math.max(0, clamped / 1000);
@@ -755,6 +788,13 @@ export class DomReplayer {
           this.viewportWrapper.style.height = `${event.height}px`;
           this.iframe.style.width = `${event.width}px`;
           this.iframe.style.height = `${event.height}px`;
+          if (this.annotationCanvas) {
+            this.annotationCanvas.width = event.width;
+            this.annotationCanvas.height = event.height;
+            this.annotationCanvas.style.width = `${event.width}px`;
+            this.annotationCanvas.style.height = `${event.height}px`;
+            this.redrawAnnotations(this.currentTimeMs);
+          }
           this.updateScaling();
         }
         break;
@@ -834,11 +874,127 @@ export class DomReplayer {
         }
         break;
       }
+
+      case 'drawing': {
+        if (!this.annotationCtx || !this.annotationCanvas) break;
+        const data = event.data;
+        if (data.action === 'clear') {
+          this.activeReplayStrokes = [];
+          this.annotationCtx.clearRect(0, 0, this.annotationCanvas.width, this.annotationCanvas.height);
+        } else if (data.action === 'draw') {
+          const stroke = {
+            tool: data.tool || 'pen',
+            points: data.points || [],
+            color: data.color || '#ef4444',
+            strokeWidth: data.strokeWidth || 4,
+            disappearing: !!data.disappearing,
+            timestamp: event.timestamp,
+            fadeAfterMs: data.fadeAfterMs || 3000
+          };
+          this.activeReplayStrokes.push(stroke);
+          this.drawReplayStroke(stroke, 1);
+        }
+        break;
+      }
     }
+  }
+
+  private drawReplayStroke(
+    stroke: { tool: DrawingTool; points: DrawingPoint[]; color: string; strokeWidth: number },
+    opacity: number = 1
+  ): void {
+    if (!this.annotationCtx) return;
+    const ctx = this.annotationCtx;
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.strokeStyle = stroke.color;
+    ctx.fillStyle = stroke.color;
+    ctx.lineWidth = stroke.strokeWidth;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (stroke.tool === 'pen') {
+      if (stroke.points.length === 1) {
+        ctx.beginPath();
+        ctx.arc(stroke.points[0].x, stroke.points[0].y, stroke.strokeWidth / 2, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (stroke.points.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+        for (let i = 1; i < stroke.points.length; i++) {
+          ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+        }
+        ctx.stroke();
+      }
+    } else if (stroke.tool === 'arrow' && stroke.points.length >= 2) {
+      const start = stroke.points[0];
+      const end = stroke.points[1];
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist >= 4) {
+        const angle = Math.atan2(dy, dx);
+        const headLength = Math.max(14, stroke.strokeWidth * 3.5);
+        const arrowAngle = Math.PI / 6;
+
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(end.x, end.y);
+        ctx.lineTo(
+          end.x - headLength * Math.cos(angle - arrowAngle),
+          end.y - headLength * Math.sin(angle - arrowAngle)
+        );
+        ctx.lineTo(
+          end.x - (headLength * 0.65) * Math.cos(angle),
+          end.y - (headLength * 0.65) * Math.sin(angle)
+        );
+        ctx.lineTo(
+          end.x - headLength * Math.cos(angle + arrowAngle),
+          end.y - headLength * Math.sin(angle + arrowAngle)
+        );
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  private redrawAnnotations(currentTimeMs: number): void {
+    if (!this.annotationCtx || !this.annotationCanvas) return;
+    this.annotationCtx.clearRect(0, 0, this.annotationCanvas.width, this.annotationCanvas.height);
+
+    for (const stroke of this.activeReplayStrokes) {
+      let opacity = 1;
+      if (stroke.disappearing) {
+        const elapsed = currentTimeMs - stroke.timestamp;
+        if (elapsed >= stroke.fadeAfterMs) {
+          continue;
+        } else if (elapsed > stroke.fadeAfterMs - 600) {
+          opacity = Math.max(0, (stroke.fadeAfterMs - elapsed) / 600);
+        }
+      }
+      this.drawReplayStroke(stroke, opacity);
+    }
+  }
+
+  private updateDisappearingAnnotations(currentTimeMs: number): void {
+    if (!this.annotationCtx || !this.annotationCanvas) return;
+    const hasDisappearing = this.activeReplayStrokes.some((s) => s.disappearing);
+    if (!hasDisappearing) return;
+    this.redrawAnnotations(currentTimeMs);
   }
 
   destroy(): void {
     this.pause();
+    if (this.annotationCanvas) {
+      this.annotationCanvas.remove();
+      this.annotationCanvas = undefined;
+      this.annotationCtx = undefined;
+    }
     if (this.cameraVideo) {
       this.cameraVideo.pause();
       this.cameraVideo.src = '';

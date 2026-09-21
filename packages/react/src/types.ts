@@ -12,10 +12,26 @@ import type {
   StoragePruneOptions,
   StoragePruneResult,
   StorageStats,
-  HotkeyConfig
+  HotkeyConfig,
+  TelestratorConfig,
+  DrawingTool,
+  DrawingPoint,
+  DrawingEventData
 } from '@divmora/show-and-tell';
 
-export type { ThemeConfig, ThemeMode, StorageConfig, StoragePruneOptions, StoragePruneResult, StorageStats, HotkeyConfig };
+export type {
+  ThemeConfig,
+  ThemeMode,
+  StorageConfig,
+  StoragePruneOptions,
+  StoragePruneResult,
+  StorageStats,
+  HotkeyConfig,
+  TelestratorConfig,
+  DrawingTool,
+  DrawingPoint,
+  DrawingEventData
+};
 
 export interface UseShowAndTellOptions extends ShowAndTellConfig {
   /** Stop active recording automatically when component unmounts (default: false) */
@@ -85,6 +101,18 @@ export interface UseShowAndTellReturn {
   toggleCamera: () => boolean;
   /** True if camera bubble is currently active and visible */
   isCameraActive: boolean;
+  /** True if screen annotation telestrator drawing mode is currently active */
+  isTelestratorActive: boolean;
+  /** Toggle telestrator drawing overlay mode. Returns new active state */
+  toggleTelestrator: () => boolean;
+  /** Clear all screen annotations and drawings */
+  clearDrawings: () => void;
+  /** Set current drawing tool ('pen' | 'arrow') */
+  setDrawingTool: (tool: DrawingTool) => void;
+  /** Set current drawing color */
+  setDrawingColor: (color: string) => void;
+  /** Toggle disappearing ink mode. Returns new state */
+  toggleDisappearingInk: () => boolean;
   /** Trigger a click ripple animation at specified viewport coordinates */
   triggerClickRipple: (x: number, y: number, color?: string) => void;
   /** Dynamically update the visual theme tokens and mode */

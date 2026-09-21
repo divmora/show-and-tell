@@ -218,7 +218,8 @@ document.addEventListener('DOMContentLoaded', () => {
     code += `  diagnostics: ${diag}, // Developer console & network breadcrumbs\n`;
     code += `  countdown: ${countdown ? 3 : 0}, // Pre-recording 3-2-1 countdown overlay with audio ticks\n`;
     code += `  audioMeter: ${audioMeter}, // Real-time microphone VU meter & silent mic alert\n`;
-    code += `  hotkeys: ${document.getElementById('hotkeysOption')?.checked ?? true}, // Global shortcuts: Alt+Shift+R/P/M/C/S/D\n`;
+    code += `  hotkeys: ${document.getElementById('hotkeysOption')?.checked ?? true}, // Global shortcuts: Alt+Shift+R/P/M/C/S/D/A/X\n`;
+    code += `  telestrator: ${document.getElementById('telestratorOption')?.checked ?? true}, // Screen annotation drawing tools (Alt+Shift+A)\n`;
     code += `  ui: ${ui}, // Floating draggable recording toolbar\n`;
     code += `  previewModal: ${preview}, // Post-recording playback & export modal\n`;
     if (!storageEnabled) {
@@ -537,6 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
         spotlight: spotlightOption ? spotlightOption.checked : false,
         ui: floatingUiCheckbox.checked,
         hotkeys: document.getElementById('hotkeysOption')?.checked ?? true,
+        telestrator: document.getElementById('telestratorOption')?.checked ?? true,
         previewModal: previewModalCheckbox.checked,
         storage: storagePersistenceCheckbox.checked ? {
           enabled: true,
@@ -701,6 +703,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const hotkeysOptionCheckbox = document.getElementById('hotkeysOption');
   if (hotkeysOptionCheckbox) {
     hotkeysOptionCheckbox.addEventListener('change', updateSnippet);
+  }
+
+  const telestratorOptionCheckbox = document.getElementById('telestratorOption');
+  if (telestratorOptionCheckbox) {
+    telestratorOptionCheckbox.addEventListener('change', updateSnippet);
   }
 
   // Register global hotkeys to trigger start on Alt+Shift+R

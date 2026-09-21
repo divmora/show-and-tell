@@ -38,6 +38,13 @@ export interface SessionInitOptions {
   onTriggerRipple?: (x: number, y: number, color?: string) => void;
   onToggleCamera?: () => boolean;
   onIsCameraActive?: () => boolean;
+  onToggleTelestrator?: () => boolean;
+  onSetTelestrator?: (active: boolean) => void;
+  onIsTelestratorActive?: () => boolean;
+  onClearDrawings?: () => void;
+  onSetDrawingTool?: (tool: any) => void;
+  onSetDrawingColor?: (color: string) => void;
+  onToggleDisappearingInk?: () => boolean;
 }
 
 export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, any[]>> implements RecordingSession {
@@ -58,6 +65,13 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
   private onTriggerRipple?: (x: number, y: number, color?: string) => void;
   private onToggleCamera?: () => boolean;
   private onIsCameraActive?: () => boolean;
+  private onToggleTelestrator?: () => boolean;
+  private onSetTelestrator?: (active: boolean) => void;
+  private onIsTelestratorActive?: () => boolean;
+  private onClearDrawings?: () => void;
+  private onSetDrawingTool?: (tool: any) => void;
+  private onSetDrawingColor?: (color: string) => void;
+  private onToggleDisappearingInk?: () => boolean;
   private stopPromise?: Promise<RecordingResult>;
 
   constructor(options: SessionInitOptions) {
@@ -78,6 +92,13 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
     this.onTriggerRipple = options.onTriggerRipple;
     this.onToggleCamera = options.onToggleCamera;
     this.onIsCameraActive = options.onIsCameraActive;
+    this.onToggleTelestrator = options.onToggleTelestrator;
+    this.onSetTelestrator = options.onSetTelestrator;
+    this.onIsTelestratorActive = options.onIsTelestratorActive;
+    this.onClearDrawings = options.onClearDrawings;
+    this.onSetDrawingTool = options.onSetDrawingTool;
+    this.onSetDrawingColor = options.onSetDrawingColor;
+    this.onToggleDisappearingInk = options.onToggleDisappearingInk;
 
     // Forward duration tracker events
     this.durationTracker.on('tick', (stats) => this.emit('tick', stats));
@@ -120,6 +141,42 @@ export class RecordingSessionImpl extends EventEmitter<Record<SessionEventName, 
 
   isCameraActive(): boolean {
     return this.onIsCameraActive ? this.onIsCameraActive() : false;
+  }
+
+  toggleTelestrator(): boolean {
+    if (this.onToggleTelestrator) {
+      const active = this.onToggleTelestrator();
+      this.emit('telestratorToggle', active);
+      return active;
+    }
+    return false;
+  }
+
+  setTelestrator(active: boolean): void {
+    if (this.onSetTelestrator) {
+      this.onSetTelestrator(active);
+      this.emit('telestratorToggle', active);
+    }
+  }
+
+  isTelestratorActive(): boolean {
+    return this.onIsTelestratorActive ? this.onIsTelestratorActive() : false;
+  }
+
+  clearDrawings(): void {
+    this.onClearDrawings?.();
+  }
+
+  setDrawingTool(tool: any): void {
+    this.onSetDrawingTool?.(tool);
+  }
+
+  setDrawingColor(color: string): void {
+    this.onSetDrawingColor?.(color);
+  }
+
+  toggleDisappearingInk(): boolean {
+    return this.onToggleDisappearingInk ? this.onToggleDisappearingInk() : false;
   }
 
   async stop(): Promise<RecordingResult> {

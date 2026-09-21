@@ -23,6 +23,7 @@ import { CameraBubble } from '../camera/bubble';
 import { VideoCompositor } from '../camera/compositor';
 import { PipController } from '../ui/pip-controller';
 import { CursorEffectsManager } from '../ui/cursor-effects';
+import { TelestratorOverlay } from '../ui/telestrator';
 import { CountdownOverlay } from '../ui/countdown';
 import { formatDuration } from '../utils/time';
 import { HotkeyManager } from '../ui/hotkeys';
@@ -34,6 +35,7 @@ export class RecorderEngine {
   private domRecorder?: DomRecorder;
   private pipController?: PipController;
   private cursorEffects?: CursorEffectsManager;
+  private telestrator?: TelestratorOverlay;
   private originalDocumentTitle?: string;
   private domEvents: DomRecordingEvent[] = [];
   private displayStream?: MediaStream;
@@ -366,6 +368,27 @@ export class RecorderEngine {
         },
         onTriggerRipple: (x: number, y: number, color?: string) => {
           this.cursorEffects?.triggerRipple(x, y, color);
+        },
+        onToggleTelestrator: () => {
+          return this.telestrator ? this.telestrator.toggle() : false;
+        },
+        onSetTelestrator: (active: boolean) => {
+          this.telestrator?.setActive(active);
+        },
+        onIsTelestratorActive: () => {
+          return this.telestrator ? this.telestrator.getIsActive() : false;
+        },
+        onClearDrawings: () => {
+          this.telestrator?.clear();
+        },
+        onSetDrawingTool: (tool: any) => {
+          this.telestrator?.setTool(tool);
+        },
+        onSetDrawingColor: (color: string) => {
+          this.telestrator?.setColor(color);
+        },
+        onToggleDisappearingInk: () => {
+          return this.telestrator ? this.telestrator.toggleDisappearingInk() : false;
         }
       });
 
@@ -434,6 +457,20 @@ export class RecorderEngine {
           ...cursorConfig
         });
         this.cursorEffects.mount();
+      }
+
+      // Mount telestrator overlay (screen drawing & annotations)
+      if (config.telestrator !== false) {
+        const telestratorConfig = typeof config.telestrator === 'object' ? config.telestrator : {};
+        this.telestrator = new TelestratorOverlay(telestratorConfig);
+        this.telestrator.mount();
+        this.telestrator.onDraw = (data) => {
+          this.domRecorder?.recordDrawing(data);
+          this.activeSession?.emit('drawing', data);
+        };
+        this.telestrator.onToggle = (active) => {
+          this.activeSession?.emit('telestratorToggle', active);
+        };
       }
 
       // Mount widget
@@ -604,6 +641,27 @@ export class RecorderEngine {
       },
       onTriggerRipple: (x: number, y: number, color?: string) => {
         this.cursorEffects?.triggerRipple(x, y, color);
+      },
+      onToggleTelestrator: () => {
+        return this.telestrator ? this.telestrator.toggle() : false;
+      },
+      onSetTelestrator: (active: boolean) => {
+        this.telestrator?.setActive(active);
+      },
+      onIsTelestratorActive: () => {
+        return this.telestrator ? this.telestrator.getIsActive() : false;
+      },
+      onClearDrawings: () => {
+        this.telestrator?.clear();
+      },
+      onSetDrawingTool: (tool: any) => {
+        this.telestrator?.setTool(tool);
+      },
+      onSetDrawingColor: (color: string) => {
+        this.telestrator?.setColor(color);
+      },
+      onToggleDisappearingInk: () => {
+        return this.telestrator ? this.telestrator.toggleDisappearingInk() : false;
       }
     });
 
@@ -708,6 +766,19 @@ export class RecorderEngine {
         ...cursorConfig
       });
       this.cursorEffects.mount();
+    }
+
+    // Mount telestrator overlay (screen drawing & annotations)
+    if (config.telestrator !== false) {
+      const telestratorConfig = typeof config.telestrator === 'object' ? config.telestrator : {};
+      this.telestrator = new TelestratorOverlay(telestratorConfig);
+      this.telestrator.mount();
+      this.telestrator.onDraw = (data) => {
+        this.activeSession?.emit('drawing', data);
+      };
+      this.telestrator.onToggle = (active) => {
+        this.activeSession?.emit('telestratorToggle', active);
+      };
     }
 
     // 13. Mount Floating UI Widget (if enabled)
@@ -838,6 +909,11 @@ export class RecorderEngine {
     if (this.cursorEffects) {
       this.cursorEffects.destroy();
       this.cursorEffects = undefined;
+    }
+
+    if (this.telestrator) {
+      this.telestrator.destroy();
+      this.telestrator = undefined;
     }
 
     if (this.pipController) {
@@ -1010,6 +1086,12 @@ export class RecorderEngine {
     if (this.cursorEffects) {
       this.cursorEffects.destroy();
       this.cursorEffects = undefined;
+    }
+
+    // Clean up telestrator
+    if (this.telestrator) {
+      this.telestrator.destroy();
+      this.telestrator = undefined;
     }
 
     // Close Document PiP window if active

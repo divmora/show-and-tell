@@ -12,7 +12,7 @@ import {
   type StoragePruneResult,
   type StorageStats
 } from '@divmora/show-and-tell';
-import type { UseShowAndTellOptions, UseShowAndTellReturn } from '../types';
+import type { UseShowAndTellOptions, UseShowAndTellReturn, DrawingTool } from '../types';
 
 /**
  * React hook providing reactive screen recording state and session controls.
@@ -39,6 +39,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
   const [isSilentMicWarning, setIsSilentMicWarning] = useState(false);
   const [isSpotlightActive, setIsSpotlightActive] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isTelestratorActive, setIsTelestratorActive] = useState(false);
   const [activeSession, setActiveSession] = useState<RecordingSession | null>(null);
   const [lastResult, setLastResult] = useState<RecordingResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -62,6 +63,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       setIsPaused(existing.state === 'paused');
       setIsMicMuted(existing.isMicMuted());
       setIsSpotlightActive(existing.isSpotlightActive());
+      setIsTelestratorActive(Boolean(existing.isTelestratorActive?.()));
       const currentStats = existing.getStats();
       setStats(currentStats);
       setFormattedElapsed(currentStats.formattedElapsed);
@@ -81,6 +83,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     setState(session.state);
     setIsPaused(session.state === 'paused');
     setIsMicMuted(session.isMicMuted());
+    setIsTelestratorActive(Boolean(session.isTelestratorActive?.()));
 
     const offTick = session.on('tick', (s: DurationStats) => {
       setStats(s);
@@ -121,9 +124,14 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       setIsCameraActive(Boolean(active));
     });
 
+    const offTelestrator = session.on('telestratorToggle', (active: boolean) => {
+      setIsTelestratorActive(Boolean(active));
+    });
+
     const offDiscard = session.on('discard', () => {
       setState('idle');
       setIsPaused(false);
+      setIsTelestratorActive(false);
       setActiveSession(null);
       activeSessionRef.current = null;
     });
@@ -131,6 +139,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     const offStop = session.on('stop', (result: RecordingResult) => {
       setLastResult(result);
       setState('stopped');
+      setIsTelestratorActive(false);
       setActiveSession(null);
       activeSessionRef.current = null;
       optionsRef.current.onStop?.(result);
@@ -152,6 +161,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
       offAudioLevel();
       offSilentWarning();
       offCamera();
+      offTelestrator();
       offDiscard();
       offStop();
       offError();
@@ -299,6 +309,45 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     return false;
   }, []);
 
+  const toggleTelestrator = useCallback((): boolean => {
+    const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+    if (session && session.toggleTelestrator) {
+      const active = session.toggleTelestrator();
+      setIsTelestratorActive(active);
+      return active;
+    }
+    return false;
+  }, []);
+
+  const clearDrawings = useCallback(() => {
+    const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+    if (session && session.clearDrawings) {
+      session.clearDrawings();
+    }
+  }, []);
+
+  const setDrawingTool = useCallback((tool: DrawingTool) => {
+    const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+    if (session && session.setDrawingTool) {
+      session.setDrawingTool(tool);
+    }
+  }, []);
+
+  const setDrawingColor = useCallback((color: string) => {
+    const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+    if (session && session.setDrawingColor) {
+      session.setDrawingColor(color);
+    }
+  }, []);
+
+  const toggleDisappearingInk = useCallback((): boolean => {
+    const session = activeSessionRef.current || ShowAndTell.getActiveSession();
+    if (session && session.toggleDisappearingInk) {
+      return session.toggleDisappearingInk();
+    }
+    return false;
+  }, []);
+
   const triggerClickRipple = useCallback((x: number, y: number, color?: string) => {
     const session = activeSessionRef.current || ShowAndTell.getActiveSession();
     if (session) {
@@ -348,6 +397,7 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     isSilentMicWarning,
     isSpotlightActive,
     isCameraActive,
+    isTelestratorActive,
     activeSession,
     lastResult,
     error,
@@ -362,6 +412,11 @@ export function useShowAndTell(options: UseShowAndTellOptions = {}): UseShowAndT
     toggleSpotlight,
     setSpotlight,
     toggleCamera,
+    toggleTelestrator,
+    clearDrawings,
+    setDrawingTool,
+    setDrawingColor,
+    toggleDisappearingInk,
     triggerClickRipple,
     setTheme,
     clearError,

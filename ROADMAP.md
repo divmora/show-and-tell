@@ -10,10 +10,7 @@ This document serves as the **living product roadmap** for ShowAndTell.
 ## 🎯 Living Roadmap
 
 
-### ✏️ 2. Screen Annotations & Video Editing
-- *(Active implementation tasks for in-page telestrator drawing tools [#16](https://github.com/divmora/show-and-tell/issues/16) are tracked directly in GitHub Issues)*
-
-### 🔍 3. Session Replay & Diagnostics
+### 🔍 2. Session Replay & Diagnostics
 - *(Active implementation tasks for skipping inactivity in session replay [#18](https://github.com/divmora/show-and-tell/issues/18) are tracked directly in GitHub Issues)*
 
 ---
