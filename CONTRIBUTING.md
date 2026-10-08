@@ -116,4 +116,4 @@ chore(deps): bump vite to 6.4.3
 
 ## Licensing & IP
 
-All contributions to **ShowAndTell** are licensed under the project's [Business Source License 1.1 (BSL 1.1)](LICENSE). By submitting a Pull Request, you certify that you have the right to license your contribution under these terms.
+All contributions to **ShowAndTell** are licensed under the project's [Apache License, Version 2.0](LICENSE). By submitting a Pull Request, you certify that you have the right to license your contribution under these terms.

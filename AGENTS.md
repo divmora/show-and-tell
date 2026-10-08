@@ -43,7 +43,7 @@ show-and-tell/
 │   └── standalone.html              # Zero-server static test harness
 │
 ├── .github/                         # GitHub Actions & Dependabot configurations
-├── LICENSE                          # Business Source License 1.1 (BSL 1.1)
+├── LICENSE                          # Apache License, Version 2.0
 ├── Makefile                         # Standard automation targets
 ├── README.md                        # Project documentation & status badges
 ├── ROADMAP.md                       # Living product roadmap (future items to implement/prune)

@@ -12,7 +12,7 @@
     "start": "node dist/index.js"
   },
   "author": "DIVMORA Technologies",
-  "license": "BSL-1.1",
+  "license": "Apache-2.0",
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.21.2",

@@ -3,7 +3,7 @@
 > **100% Standalone, Zero-Server-Dependency JavaScript Screen Recording SDK** with Audio Mixing, Configurable Max Duration Limits, and Browser Reload Resilience.
 
 [![Latest Release](https://img.shields.io/github/v/release/divmora/show-and-tell?logo=github)](https://github.com/divmora/show-and-tell/releases)
-[![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-blue.svg)](https://github.com/divmora/.github/blob/main/LICENSING.md)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![CI/CD](https://github.com/divmora/show-and-tell/actions/workflows/ci.yml/badge.svg)](https://github.com/divmora/show-and-tell/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Bundled_with-Vite-646CFF)](https://vitejs.dev/)
@@ -351,7 +351,7 @@ show-and-tell/
 │   └── standalone.html              # Raw static file test (zero server)
 │
 ├── Makefile                         # Standard build & test automation
-├── LICENSE                          # Business Source License 1.1
+├── LICENSE                          # Apache License 2.0
 ├── SECURITY.md                      # Vulnerability reporting & SLA
 ├── CONTRIBUTING.md                  # Development guidelines
 └── README.md
@@ -392,12 +392,9 @@ make demo
 
 ---
 
-## 📄 License & Commercial Use
+## 📄 License
 
-This repository is licensed under the **Business Source License 1.1 (BSL 1.1)**.
+This repository is licensed under the **Apache License, Version 2.0**.
 
-- **Non-Production Use**: Free of charge for local development, testing, staging, QA, CI/CD automated validation, educational purposes, and proof-of-concept evaluation.
-- **Production Deployments**: Executing ShowAndTell in a production environment, selling, reselling, sublicensing, or offering it as a commercial product or hosted service requires a commercial license (EULA) from **DIVMORA Technologies**.
-- **Change Date**: Converts to the permissive **Apache License, Version 2.0** three (3) years after the release date of each respective version.
-
-For commercial licenses and enterprise support, contact **[licensing@divmora.com](mailto:licensing@divmora.com)** or visit **[divmora.com](https://divmora.com)**.
+- **Free and Open Source**: Permitted for commercial and non-commercial use, modification, distribution, and private or production deployments without royalty.
+- **Enterprise & Custom Integration**: For commercial inquiries, dedicated sponsorship, or bespoke integrations, contact **[contact@divmora.com](mailto:contact@divmora.com)** or visit **[divmora.com](https://divmora.com)**.

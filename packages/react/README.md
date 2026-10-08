@@ -3,7 +3,7 @@
 > Drop-in React hooks and components for [ShowAndTell](https://github.com/divmora/show-and-tell) screen recording and session replay.
 
 [![npm version](https://img.shields.io/npm/v/@divmora/show-and-tell-react.svg)](https://www.npmjs.com/package/@divmora/show-and-tell-react)
-[![License: BSL 1.1](https://img.shields.io/badge/License-BSL_1.1-blue.svg)](https://github.com/divmora/show-and-tell/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://github.com/divmora/show-and-tell/blob/main/LICENSE)
 
 ---
 
@@ -228,5 +228,5 @@ export function FeedbackModal() {
 ---
 
 ## License
-
-ShowAndTell is licensed under the [Business Source License 1.1 (BSL 1.1)](https://github.com/divmora/show-and-tell/blob/main/LICENSE). Free for non-production use and testing.
+ 
+ShowAndTell is licensed under the [Apache License, Version 2.0](https://github.com/divmora/show-and-tell/blob/main/LICENSE). Free for personal and commercial use.
