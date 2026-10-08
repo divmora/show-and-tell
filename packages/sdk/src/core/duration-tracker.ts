@@ -21,7 +21,7 @@ export class DurationTracker extends EventEmitter<DurationTrackerEvents> {
   private currentSegmentStartTime: number = 0;
   private isRunning: boolean = false;
   private isPaused: boolean = false;
-  private timerIntervalId?: number | NodeJS.Timeout;
+  private timerIntervalId?: ReturnType<typeof setInterval>;
   private warningFired: boolean = false;
   private timeoutFired: boolean = false;
 

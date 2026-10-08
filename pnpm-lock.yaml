@@ -33,14 +33,14 @@ importers:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
       typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^8.3.3
         version: 8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15)
       vite-plugin-dts:
         specifier: ^4.5.0
-        version: 4.5.4(@types/node@26.6.4)(rollup@4.64.1)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15))
+        version: 4.5.4(@types/node@26.6.4)(rollup@4.64.1)(supports-color@8.1.1)(typescript@6.0.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15))
       vitest:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.4)(jsdom@26.1.0(supports-color@8.1.1))(lightningcss@1.33.0)(supports-color@8.1.1)(tsx@4.23.15)
@@ -63,14 +63,14 @@ importers:
         specifier: ^29.1.1
         version: 29.1.1
       typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^8.3.3
         version: 8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15)
       vite-plugin-dts:
         specifier: ^4.5.0
-        version: 4.5.4(@types/node@26.6.4)(rollup@4.64.1)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15))
+        version: 4.5.4(@types/node@26.6.4)(rollup@4.64.1)(supports-color@8.1.1)(typescript@6.0.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15))
       vitest:
         specifier: ^3.0.5
         version: 3.2.7(@types/node@26.6.4)(jsdom@29.1.1)(lightningcss@1.33.0)(supports-color@8.1.1)(tsx@4.23.15)
@@ -103,8 +103,8 @@ importers:
         specifier: ^4.19.2
         version: 4.23.15
       typescript:
-        specifier: ^5.7.3
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
 packages:
 
@@ -1886,6 +1886,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
   ufo@1.6.4:
     resolution: {integrity: sha512-JFNbkD1Svwe0KvGi8GOeLcP4kAWQ609twvCdcHxq1oSL8svv39ZuSvajcD8B+5D0eL4+s1Is2D/O6KN3qcTeRA==}
 
@@ -2703,13 +2708,13 @@ snapshots:
 
   '@volar/source-map@2.4.28': {}
 
-  '@volar/typescript@2.4.28(typescript@5.9.3)':
+  '@volar/typescript@2.4.28(typescript@6.0.3)':
     dependencies:
       '@volar/language-core': 2.4.28
       path-browserify: 1.0.1
       vscode-uri: 3.2.0
     optionalDependencies:
-      typescript: 5.9.3
+      typescript: 6.0.3
 
   '@vue/compiler-core@3.5.43':
     dependencies:
@@ -2729,7 +2734,7 @@ snapshots:
       de-indent: 1.0.2
       he: 1.2.0
 
-  '@vue/language-core@2.2.0(typescript@5.9.3)':
+  '@vue/language-core@2.2.0(typescript@6.0.3)':
     dependencies:
       '@volar/language-core': 2.4.28
       '@vue/compiler-dom': 3.5.43
@@ -2740,7 +2745,7 @@ snapshots:
       muggle-string: 0.4.1
       path-browserify: 1.0.1
     optionalDependencies:
-      typescript: 5.9.3
+      typescript: 6.0.3
 
   '@vue/shared@3.5.43': {}
 
@@ -3799,6 +3804,8 @@ snapshots:
 
   typescript@5.9.3: {}
 
+  typescript@6.0.3: {}
+
   ufo@1.6.4: {}
 
   undici-types@8.11.2: {}
@@ -3836,18 +3843,18 @@ snapshots:
       - tsx
       - yaml
 
-  vite-plugin-dts@4.5.4(@types/node@26.6.4)(rollup@4.64.1)(supports-color@8.1.1)(typescript@5.9.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15)):
+  vite-plugin-dts@4.5.4(@types/node@26.6.4)(rollup@4.64.1)(supports-color@8.1.1)(typescript@6.0.3)(vite@8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15)):
     dependencies:
       '@microsoft/api-extractor': 7.59.4(@types/node@26.6.4)
       '@rollup/pluginutils': 5.4.0(rollup@4.64.1)
-      '@volar/typescript': 2.4.28(typescript@5.9.3)
-      '@vue/language-core': 2.2.0(typescript@5.9.3)
+      '@volar/typescript': 2.4.28(typescript@6.0.3)
+      '@vue/language-core': 2.2.0(typescript@6.0.3)
       compare-versions: 6.1.1
       debug: 4.4.3(supports-color@8.1.1)
       kolorist: 1.8.0
       local-pkg: 1.2.1
       magic-string: 0.30.21
-      typescript: 5.9.3
+      typescript: 6.0.3
     optionalDependencies:
       vite: 8.3.3(@types/node@26.6.4)(esbuild@0.28.2)(tsx@4.23.15)
     transitivePeerDependencies:
