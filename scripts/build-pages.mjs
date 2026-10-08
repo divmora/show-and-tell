@@ -26,7 +26,7 @@ fs.mkdirSync(siteDistDir, { recursive: true });
 if (fs.existsSync(sdkDistDir)) {
   fs.cpSync(sdkDistDir, siteDistDir, { recursive: true });
 } else {
-  console.error('Error: SDK dist directory not found. Please run npm run build first.');
+  console.error('Error: SDK dist directory not found. Please run pnpm run build first.');
   process.exit(1);
 }
 

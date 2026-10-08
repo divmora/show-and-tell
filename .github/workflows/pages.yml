@@ -19,6 +19,6 @@ jobs:
     uses: divmora/.github/.github/workflows/pages-deploy.yml@main
     with:
       artifact-path: './site'
-      build-command: 'npm run build:pages'
+      build-command: 'pnpm run build:pages'
       node-version: '26'
-      package-manager: 'npm'
+      package-manager: 'pnpm'

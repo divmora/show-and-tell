@@ -14,7 +14,7 @@ All contributors and maintainers are expected to follow the [DIVMORA Code of Con
 
 Before setting up local development, make sure you have the following installed:
 - **Node.js**: `26.x` or later (LTS recommended)
-- **npm**: `10.x` or later
+- **pnpm**: `9.x` or later (or npm `10.x` or later)
 - **Make**: GNU Make (for running standard workflow targets)
 - **Docker**: (Optional) For containerized testing and deployments
 
@@ -31,7 +31,7 @@ Before setting up local development, make sure you have the following installed:
 2. **Install all dependencies:**
    ```bash
    make dev-setup
-   # or npm install
+   # or pnpm install
    ```
 
 3. **Build the packages:**
@@ -62,7 +62,7 @@ Before setting up local development, make sure you have the following installed:
 | `make build-server` | Compile the demo server TypeScript into `dist/`. |
 | `make test` | Run automated unit test suite with Vitest. |
 | `make test-watch` | Run Vitest in watch mode for active SDK development. |
-| `make lint` | Run TypeScript typechecking across SDK and server packages. |
+| `make lint` | Run TypeScript typechecking across SDK, React, and server packages. |
 | `make fmt` | Check code formatting standards. |
 | `make clean` | Remove compiled build outputs (`dist/`) and caches. |
 | `make demo` | Start companion demo server on port 3000. |

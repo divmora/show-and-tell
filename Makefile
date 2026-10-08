@@ -5,49 +5,49 @@ all: lint test build
 dev-setup: install
 
 install:
-	npm install
+	pnpm install
 
 build: build-sdk build-react build-server
 
 build-sdk:
-	npm run build:sdk
+	pnpm run build:sdk
 
 build-react:
-	npm run build:react
+	pnpm run build:react
 
 build-server:
-	npm run build:server
+	pnpm run build:server
 
 test:
-	npm test
+	pnpm test
 
 test-sdk:
-	npm run test:sdk
+	pnpm run test:sdk
 
 test-react:
-	npm run test:react
+	pnpm run test:react
 
 test-watch:
-	npm run test:watch --workspace=packages/sdk
+	pnpm --filter @divmora/show-and-tell run test:watch
 
 lint:
-	npm run lint
+	pnpm run lint
 
 fmt:
-	npm run fmt
+	pnpm run fmt
 
 clean:
 	@rm -rf packages/sdk/dist packages/react/dist packages/server/dist site node_modules/.cache coverage
 	@echo "Clean complete."
 
 pages:
-	npm run build:pages
+	pnpm run build:pages
 
 demo:
-	npm run demo
+	pnpm run demo
 
 start:
-	npm start
+	pnpm start
 
 docker-build:
 	docker build -t show-and-tell:latest .

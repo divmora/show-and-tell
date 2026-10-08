@@ -10,9 +10,9 @@ jobs:
   ci:
     uses: divmora/.github/.github/workflows/node-ci.yml@main
     with:
-      package-manager: 'npm'
+      package-manager: 'pnpm'
       node-version: '26'
-      lint-command: 'npm run lint'
+      lint-command: 'pnpm run lint'
       test-command: 'test'
       enable-build: true
-      build-command: 'npm run build && npm run build:server'
+      build-command: 'pnpm run build && pnpm run build:server'

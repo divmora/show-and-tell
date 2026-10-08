@@ -6,7 +6,7 @@ This document defines architecture layouts, safety guarantees, coding standards,
 
 ## 1. Project Architecture Layout
 
-ShowAndTell is structured as an npm monorepo providing a client-side screen recording SDK and a companion demo/upload server:
+ShowAndTell is structured as a pnpm monorepo providing a client-side screen recording SDK and a companion demo/upload server:
 
 ```
 show-and-tell/

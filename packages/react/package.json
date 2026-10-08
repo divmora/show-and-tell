@@ -42,7 +42,7 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "@divmora/show-and-tell": "*"
+    "@divmora/show-and-tell": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/react": "^16.2.0",

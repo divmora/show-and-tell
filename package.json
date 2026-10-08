@@ -9,18 +9,18 @@
     "packages/server"
   ],
   "scripts": {
-    "build:sdk": "npm run build --workspace=packages/sdk",
-    "build:react": "npm run build --workspace=packages/react",
-    "build:server": "npm run build --workspace=packages/server",
-    "build": "npm run build:sdk && npm run build:react",
-    "build:pages": "npm run build && node scripts/build-pages.mjs",
-    "test:sdk": "npm run test --workspace=packages/sdk",
-    "test:react": "npm run test --workspace=packages/react",
-    "test": "npm run test:sdk && npm run test:react",
-    "lint": "tsc --noEmit --project packages/sdk/tsconfig.json && npm run build:sdk && tsc --noEmit --project packages/server/tsconfig.json && tsc --noEmit --project packages/react/tsconfig.json",
+    "build:sdk": "pnpm --filter @divmora/show-and-tell run build",
+    "build:react": "pnpm --filter @divmora/show-and-tell-react run build",
+    "build:server": "pnpm --filter show-and-tell-server run build",
+    "build": "pnpm run build:sdk && pnpm run build:react",
+    "build:pages": "pnpm run build && node scripts/build-pages.mjs",
+    "test:sdk": "pnpm --filter @divmora/show-and-tell run test",
+    "test:react": "pnpm --filter @divmora/show-and-tell-react run test",
+    "test": "pnpm run test:sdk && pnpm run test:react",
+    "lint": "pnpm run build:sdk && pnpm --filter @divmora/show-and-tell run typecheck && pnpm --filter show-and-tell-server run typecheck && pnpm --filter @divmora/show-and-tell-react run typecheck",
     "fmt": "echo 'Formatting check passed'",
     "demo": "node packages/server/dist/index.js",
-    "start": "npm run build && npm run build:server && npm run demo"
+    "start": "pnpm run build && pnpm run build:server && pnpm run demo"
   },
   "keywords": [
     "screen-recorder",

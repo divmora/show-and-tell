@@ -1,0 +1,6 @@
+packages:
+  - 'packages/sdk'
+  - 'packages/react'
+  - 'packages/server'
+allowBuilds:
+  esbuild: true

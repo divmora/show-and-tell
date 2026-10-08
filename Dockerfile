@@ -2,32 +2,36 @@ FROM node:26-alpine AS builder
 
 WORKDIR /app
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 # Copy root and package manifests
-COPY package*.json ./
-COPY packages/sdk/package*.json ./packages/sdk/
-COPY packages/react/package*.json ./packages/react/
-COPY packages/server/package*.json ./packages/server/
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/sdk/package.json ./packages/sdk/
+COPY packages/react/package.json ./packages/react/
+COPY packages/server/package.json ./packages/server/
 
 # Install all dependencies
-RUN npm ci
+RUN pnpm install --frozen-lockfile
 
 # Copy full source
 COPY . .
 
 # Build SDK and Server
-RUN npm run build && npm run build:server
+RUN pnpm run build && pnpm run build:server
 
 FROM node:26-alpine AS runner
 
 WORKDIR /app
 ENV NODE_ENV=production
 
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 # Copy root and server manifests
-COPY package*.json ./
-COPY packages/server/package*.json ./packages/server/
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/server/package.json ./packages/server/
 
 # Install production dependencies
-RUN npm ci --omit=dev
+RUN pnpm install --prod --frozen-lockfile
 
 # Copy compiled assets and demo playground
 COPY --from=builder /app/packages/sdk/dist ./packages/sdk/dist
