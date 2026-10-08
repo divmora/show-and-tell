@@ -28,7 +28,7 @@ show-and-tell/
 │   │   │   ├── utils/               # Time formatting, event emitter, codec detection
 │   │   │   └── types/               # TypeScript interface definitions (ShowAndTellConfig, etc.)
 │   │   ├── dist/                    # Bundled UMD (show-and-tell.min.js), ESM, CJS, and .d.ts
-│   │   ├── vite.config.ts           # Vite multi-format library bundler
+│   │   ├── vite.config.mts          # Vite multi-format library bundler
 │   │   └── vitest.config.ts         # Vitest unit testing configuration
 │   │
 │   └── server/                      # Companion Demo & Upload Server (Node.js/Express)
