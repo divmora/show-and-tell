@@ -4,7 +4,7 @@ import { resolve } from 'path';
 export default defineConfig({
   resolve: {
     alias: {
-      '@divmora/show-and-tell': resolve(__dirname, '../sdk/src/index.ts')
+      '@divmora/show-and-tell': resolve(import.meta.dirname, '../sdk/src/index.ts')
     }
   },
   test: {
