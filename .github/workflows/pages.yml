@@ -22,3 +22,4 @@ jobs:
       build-command: 'pnpm run build:pages'
       node-version: '26'
       package-manager: 'pnpm'
+      pnpm-version: '12'

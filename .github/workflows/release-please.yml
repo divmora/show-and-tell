@@ -15,6 +15,7 @@ jobs:
     uses: divmora/.github/.github/workflows/node-release.yml@main
     with:
       package-manager: 'pnpm'
+      pnpm-version: '12'
       node-version: '20'
       build-command: 'pnpm run build'
       publish-command: 'pnpm -r publish --access public'
