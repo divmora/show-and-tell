@@ -38,10 +38,11 @@
   "devDependencies": {
     "@types/jsdom": "^30.0.0",
     "@types/node": "^26.0.0",
+    "@typescript/typescript6": "^6.0.2",
     "@vitest/coverage-v8": "^5.0.3",
     "fake-indexeddb": "^6.0.0",
     "jsdom": "^29.1.1",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vite": "^8.3.3",
     "vite-plugin-dts": "^5.1.2",
     "vitest": "^5.0.3"
