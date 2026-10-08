@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.4.0](https://github.com/divmora/show-and-tell/compare/v0.3.0...v0.4.0) (2026-10-08)
+
+
+### Features
+
+* **dom:** add same-origin and cross-origin iframe recording and replay ([c6ac349](https://github.com/divmora/show-and-tell/commit/c6ac3499e8d2419c4ad7ec11a47731a91074d7a6))
+* **tools:** screen annotation & telestrator drawing tools ([#16](https://github.com/divmora/show-and-tell/issues/16)) ([afca669](https://github.com/divmora/show-and-tell/commit/afca669f766ee6cfef79cb68ecc61d6fd758d800))
+* **ux:** global keyboard shortcuts and hands-free recording hotkeys ([#15](https://github.com/divmora/show-and-tell/issues/15)) ([b1f3f09](https://github.com/divmora/show-and-tell/commit/b1f3f0905f187ed7267bf2380d33f9403c40ae23))
+
+
+### Miscellaneous Chores
+
+* **deps:** migrate monorepo package manager to pnpm ([8237d3c](https://github.com/divmora/show-and-tell/commit/8237d3c233891741a7248a8fb310faa5a0b70807))
+* **deps:** upgrade typescript to 6.x ([2c209ed](https://github.com/divmora/show-and-tell/commit/2c209ed81b5c80239a4a3049248ac2447bb808d7))
+* **deps:** upgrade typescript to 7.x ([a250ad5](https://github.com/divmora/show-and-tell/commit/a250ad538b09b8abcb7bd8e1e724ec16331bf8c8))
+* **deps:** upgrade vite to 7.x and configure pnpm version in workflows ([1dce5bc](https://github.com/divmora/show-and-tell/commit/1dce5bcb2875ad786e580de03b5908eec3f26b09))
+* **deps:** upgrade vite to 8.x ([4bcbc3a](https://github.com/divmora/show-and-tell/commit/4bcbc3a69aaf9a8eb5334fea3bc0b17a632a8a37))
+* **deps:** upgrade vite-plugin-dts to 5.x ([d61557d](https://github.com/divmora/show-and-tell/commit/d61557d4a2d193e0fae06162143c59bcf266c91d))
+* **deps:** upgrade vitest to 4.x ([6128ca4](https://github.com/divmora/show-and-tell/commit/6128ca493bc02988314dda7389f6900e2b80703c))
+* **deps:** upgrade vitest to 5.x ([360cbc7](https://github.com/divmora/show-and-tell/commit/360cbc7ac806ec72c69c490b6f80e2bc74a18368))
+* **license:** switch repository license from BSL 1.1 to Apache 2.0 ([0fd82b0](https://github.com/divmora/show-and-tell/commit/0fd82b015ab2df1e4c5e5097acb4379e27766138))
+
 ## [0.3.0](https://github.com/divmora/show-and-tell/compare/v0.2.0...v0.3.0) (2026-09-18)
 
 

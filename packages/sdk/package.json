@@ -1,6 +1,6 @@
 {
   "name": "@divmora/show-and-tell",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Standalone JavaScript Screen Recording SDK with Audio Mixing, Reload Resilience & Max Duration Control",
   "publishConfig": {
     "access": "public"
