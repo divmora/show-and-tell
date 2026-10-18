@@ -37,7 +37,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/jsdom": "^30.0.0",
-    "@types/node": "^26.0.0",
+    "@types/node": "^26.6.5",
     "@typescript/typescript6": "^6.0.2",
     "@vitest/coverage-v8": "^5.0.3",
     "fake-indexeddb": "^6.0.0",
